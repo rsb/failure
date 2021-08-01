@@ -5,25 +5,109 @@ package failure
 import "github.com/pkg/errors"
 
 const (
-	SystemMsg   = "system failure"
-	PlatformMsg = "platform failure"
-	ServerMsg   = "server failure"
+	SystemMsg     = "system failure"
+	PlatformMsg   = "platform failure"
+	ServerMsg     = "server failure"
+	NotFoundMsg   = "not found failure"
+	ValidationMsg = "validation failure"
+	IgnoreMsg     = "ignore failure"
 
 	systemErr = err(SystemMsg)
 	platErr   = err(PlatformMsg)
 	serverErr = err(ServerMsg)
 
-	BusinessMsg = "business failure"
-	FeatureMsg  = "feature failure"
-
-	businessErr = err(BusinessMsg)
-	featureErr  = err(FeatureMsg)
+	notFoundErr   = err(NotFoundMsg)
+	validationErr = err(ValidationMsg)
+	ignoreErr     = err(IgnoreMsg)
 )
 
 type err string
 
 func (e err) Error() string {
 	return string(e)
+}
+
+type inputErr struct {
+	public error
+	log    error
+}
+
+func (e inputErr) Error() string {
+	return e.log.Error()
+}
+
+func Input(publicErr, internalErr error) error {
+	return inputErr{
+		public: publicErr,
+		log:    internalErr,
+	}
+}
+
+func IsInput(e error) bool {
+	root := errors.Cause(e)
+	if _, ok := root.(inputErr); !ok {
+		return false
+	}
+
+	return true
+}
+
+func InputMsg(e error) (string, bool) {
+	root := errors.Cause(e)
+	i, ok := root.(inputErr)
+	if !ok {
+		return "", false
+	}
+
+	return i.public.Error(), true
+}
+
+// Ignore is used to signify that error should not be acted on, its up
+// to the handler to decide to log these errors or not.
+func Ignore(format string, a ...interface{}) error {
+	return Wrap(ignoreErr, format, a...)
+}
+
+func IsIgnore(err error) bool {
+	return errors.Cause(err) == ignoreErr
+}
+
+// ToIgnore converts `e` into the root cause of ignoreErr, it informs the
+// system to ignore this outside error.
+func ToIgnore(e error, format string, a ...interface{}) error {
+	cause := Ignore(e.Error())
+	return Wrap(cause, format, a...)
+}
+
+// NotFound is used to signify that whatever resource you were looking for
+// does not exist and that fact it does not exist is an error.
+func NotFound(format string, a ...interface{}) error {
+	return Wrap(notFoundErr, format, a...)
+}
+
+func IsNotFound(err error) bool {
+	return errors.Cause(err) == notFoundErr
+}
+
+// ToNotFound converts `e` into the root cause of errNotFound
+func ToNotFound(e error, format string, a ...interface{}) error {
+	cause := NotFound(e.Error())
+	return Wrap(cause, format, a...)
+}
+
+// Validation is used to signify that a validation rule as been violated
+func Validation(format string, a ...interface{}) error {
+	return Wrap(validationErr, format, a...)
+}
+
+func IsValidation(err error) bool {
+	return errors.Cause(err) == validationErr
+}
+
+// ToValidation converts `e` into the root cause of errNotFound
+func ToValidation(e error, format string, a ...interface{}) error {
+	cause := Validation(e.Error())
+	return Wrap(cause, format, a...)
 }
 
 // Server has the same meaning as Platform or System, it can be used instead if you

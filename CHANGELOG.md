@@ -7,6 +7,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- platform error type
-- system error type 
-- server error type
+- platform, system and server failures
+- not found, validation, input and ignore failures
