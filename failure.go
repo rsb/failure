@@ -2,7 +2,11 @@
 // common  types of errors that occur when developing microservices.
 package failure
 
-import "github.com/pkg/errors"
+import (
+	"fmt"
+
+	"github.com/pkg/errors"
+)
 
 const (
 	SystemMsg     = "system failure"
@@ -28,7 +32,7 @@ func (e err) Error() string {
 }
 
 type inputErr struct {
-	public error
+	public string
 	log    error
 }
 
@@ -36,9 +40,9 @@ func (e inputErr) Error() string {
 	return e.log.Error()
 }
 
-func Input(publicErr, internalErr error) error {
+func Input(internalErr error, format string, a ...interface{}) error {
 	return inputErr{
-		public: publicErr,
+		public: fmt.Sprintf(format, a...),
 		log:    internalErr,
 	}
 }
@@ -59,10 +63,10 @@ func InputMsg(e error) (string, bool) {
 		return "", false
 	}
 
-	return i.public.Error(), true
+	return i.public, true
 }
 
-// Ignore is used to signify that error should not be acted on, its up
+// Ignore is used to signify that error should not be acted on, it's up
 // to the handler to decide to log these errors or not.
 func Ignore(format string, a ...interface{}) error {
 	return Wrap(ignoreErr, format, a...)

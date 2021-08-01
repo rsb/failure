@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/pkg/errors"
 
 	"github.com/rsb/failure"
@@ -168,4 +170,23 @@ func TestToValidation(t *testing.T) {
 
 	expected := fmt.Sprintf("user.ID is empty: api specific msg: %s", failure.ValidationMsg)
 	assert.Equal(t, err.Error(), expected)
+}
+
+func TestInput(t *testing.T) {
+	logMsg := "Invalid User type user.ID is empty"
+	lErr := failure.Validation(logMsg)
+
+	inputErr := failure.Input(lErr, "user.ID (%s) is invalid", "xyz")
+
+	assert.Error(t, inputErr, "failure.Input is expected to return an error")
+
+	expected := fmt.Sprintf("Invalid User type user.ID is empty: %s", failure.ValidationMsg)
+	assert.Equal(t, expected, inputErr.Error())
+
+	assert.True(t, failure.IsInput(inputErr))
+	assert.False(t, failure.IsInput(lErr))
+
+	msg, ok := failure.InputMsg(inputErr)
+	require.True(t, ok)
+	require.Equal(t, "user.ID (xyz) is invalid", msg)
 }
