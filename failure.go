@@ -14,14 +14,15 @@ const (
 	ServerMsg     = "server failure"
 	NotFoundMsg   = "not found failure"
 	ValidationMsg = "validation failure"
+	DeferMsg      = "failure occurred inside defer"
 	IgnoreMsg     = "ignore failure"
 
-	systemErr = err(SystemMsg)
-	platErr   = err(PlatformMsg)
-	serverErr = err(ServerMsg)
-
+	systemErr     = err(SystemMsg)
+	platErr       = err(PlatformMsg)
+	serverErr     = err(ServerMsg)
 	notFoundErr   = err(NotFoundMsg)
 	validationErr = err(ValidationMsg)
+	deferErr      = err(DeferMsg)
 	ignoreErr     = err(IgnoreMsg)
 )
 
@@ -77,7 +78,8 @@ func IsIgnore(err error) bool {
 }
 
 // ToIgnore converts `e` into the root cause of ignoreErr, it informs the
-// system to ignore this outside error.
+// system to ignore error. Used typically to log results and do not act on
+// the error itself.
 func ToIgnore(e error, format string, a ...interface{}) error {
 	cause := Ignore(e.Error())
 	return Wrap(cause, format, a...)
@@ -93,7 +95,7 @@ func IsNotFound(err error) bool {
 	return errors.Cause(err) == notFoundErr
 }
 
-// ToNotFound converts `e` into the root cause of errNotFound
+// ToNotFound converts `e` into the root cause of notFoundErr
 func ToNotFound(e error, format string, a ...interface{}) error {
 	cause := NotFound(e.Error())
 	return Wrap(cause, format, a...)
@@ -108,9 +110,24 @@ func IsValidation(err error) bool {
 	return errors.Cause(err) == validationErr
 }
 
-// ToValidation converts `e` into the root cause of errNotFound
+// ToValidation converts `e` into the root cause of validationErr
 func ToValidation(e error, format string, a ...interface{}) error {
 	cause := Validation(e.Error())
+	return Wrap(cause, format, a...)
+}
+
+// Defer is used to signify errors that originate inside a defer function
+func Defer(format string, a ...interface{}) error {
+	return Wrap(deferErr, format, a...)
+}
+
+func IsDefer(err error) bool {
+	return errors.Cause(err) == deferErr
+}
+
+// ToDefer converts `e` into the root cause of deferErr
+func ToDefer(e error, format string, a ...interface{}) error {
+	cause := Defer(e.Error())
 	return Wrap(cause, format, a...)
 }
 
@@ -164,10 +181,7 @@ func IsPlatform(err error) bool {
 	return errors.Cause(err) == platErr
 }
 
-// ToPlatform will convert err to the root cause as a Platform type. This is
-// used when the `Platform Layer` of your code any library other than your own,
-// and you want that error to be the root cause as type Platform. This will
-// preserve the original message, just moving it into the new type.
+// ToPlatform will convert e to the root cause as platErr
 func ToPlatform(e error, format string, a ...interface{}) error {
 	cause := Platform(e.Error())
 	return Wrap(cause, format, a...)

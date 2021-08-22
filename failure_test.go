@@ -190,3 +190,20 @@ func TestInput(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "user.ID (xyz) is invalid", msg)
 }
+
+func TestDefer(t *testing.T) {
+	err := failure.Defer("some error inside a defer")
+
+	assert.Error(t, err, "failure.Defer is expected to return an error")
+
+	expected := fmt.Sprintf("some error inside a defer: %s", failure.DeferMsg)
+	assert.Equal(t, expected, err.Error())
+
+	assert.True(t, failure.IsDefer(err))
+	assert.False(t, failure.IsInput(err))
+
+	other := errors.New("some outside err")
+	err = failure.ToDefer(other, "something is wrong")
+
+	assert.True(t, failure.IsDefer(err))
+}
