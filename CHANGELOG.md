@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+
+## [0.1.0] - 2021-08-21
 ### Added
 - platform, system and server failures
 - not found, validation, input and ignore failures
