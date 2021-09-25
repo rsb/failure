@@ -10,16 +10,17 @@ import (
 
 const (
 	SystemMsg     = "system failure"
-	PlatformMsg   = "platform failure"
 	ServerMsg     = "server failure"
 	NotFoundMsg   = "not found failure"
 	ValidationMsg = "validation failure"
 	DeferMsg      = "failure occurred inside defer"
 	IgnoreMsg     = "ignore failure"
+	ConfigMsg     = "config failure"
 
-	systemErr     = err(SystemMsg)
-	platErr       = err(PlatformMsg)
-	serverErr     = err(ServerMsg)
+	systemErr = err(SystemMsg)
+	serverErr = err(ServerMsg)
+
+	configErr     = err(ConfigMsg)
 	notFoundErr   = err(NotFoundMsg)
 	validationErr = err(ValidationMsg)
 	deferErr      = err(DeferMsg)
@@ -67,6 +68,21 @@ func InputMsg(e error) (string, bool) {
 	return i.public, true
 }
 
+// Config is used to signify that error occurred when processing the
+// application configuration
+func Config(format string, a ...interface{}) error {
+	return Wrap(configErr, format, a...)
+}
+
+func IsConfig(err error) bool {
+	return errors.Cause(err) == configErr
+}
+
+func ToConfig(e error, format string, a ...interface{}) error {
+	cause := Config(e.Error())
+	return Wrap(cause, format, a...)
+}
+
 // Ignore is used to signify that error should not be acted on, it's up
 // to the handler to decide to log these errors or not.
 func Ignore(format string, a ...interface{}) error {
@@ -95,7 +111,6 @@ func IsNotFound(err error) bool {
 	return errors.Cause(err) == notFoundErr
 }
 
-// ToNotFound converts `e` into the root cause of notFoundErr
 func ToNotFound(e error, format string, a ...interface{}) error {
 	cause := NotFound(e.Error())
 	return Wrap(cause, format, a...)
@@ -110,7 +125,6 @@ func IsValidation(err error) bool {
 	return errors.Cause(err) == validationErr
 }
 
-// ToValidation converts `e` into the root cause of validationErr
 func ToValidation(e error, format string, a ...interface{}) error {
 	cause := Validation(e.Error())
 	return Wrap(cause, format, a...)
@@ -125,7 +139,6 @@ func IsDefer(err error) bool {
 	return errors.Cause(err) == deferErr
 }
 
-// ToDefer converts `e` into the root cause of deferErr
 func ToDefer(e error, format string, a ...interface{}) error {
 	cause := Defer(e.Error())
 	return Wrap(cause, format, a...)
@@ -142,8 +155,6 @@ func IsServer(err error) bool {
 	return errors.Cause(err) == serverErr
 }
 
-// ToServer behaves in the same manner as any ToXX function. Making err
-// the root cause of type systemErr in our wrap.
 func ToServer(e error, format string, a ...interface{}) error {
 	cause := Server(e.Error())
 	return Wrap(cause, format, a...)
@@ -155,35 +166,12 @@ func System(format string, a ...interface{}) error {
 	return Wrap(systemErr, format, a...)
 }
 
-// IsSystem will return true if the cause is a serverErr
 func IsSystem(err error) bool {
 	return errors.Cause(err) == systemErr
 }
 
-// ToSystem behaves in the same manner as any ToXX function. Making err
-// the root cause of type systemErr in our wrap.
 func ToSystem(e error, format string, a ...interface{}) error {
 	cause := System(e.Error())
-	return Wrap(cause, format, a...)
-}
-
-// Platform failure is intended to represent low level errors that originate at
-// the most concrete part of your architecture. I typically name this layer as
-// platform hence the error type. It has the same meaning as Server or System.
-// The idea is you choose the name that reads the best for your code and stay
-// with that one. It is not recommended mixing these.
-func Platform(format string, a ...interface{}) error {
-	return Wrap(platErr, format, a...)
-}
-
-// IsPlatform will return true if the cause is a platErr
-func IsPlatform(err error) bool {
-	return errors.Cause(err) == platErr
-}
-
-// ToPlatform will convert e to the root cause as platErr
-func ToPlatform(e error, format string, a ...interface{}) error {
-	cause := Platform(e.Error())
 	return Wrap(cause, format, a...)
 }
 

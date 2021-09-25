@@ -21,7 +21,6 @@ func TestServer(t *testing.T) {
 
 	// They are conceptually the same but are not equal
 	assert.False(t, failure.IsSystem(err))
-	assert.False(t, failure.IsPlatform(err))
 
 }
 
@@ -44,7 +43,6 @@ func TestSystem(t *testing.T) {
 	assert.True(t, failure.IsSystem(err))
 
 	assert.False(t, failure.IsServer(err))
-	assert.False(t, failure.IsPlatform(err))
 
 	assert.Contains(t, err.Error(), failure.SystemMsg)
 }
@@ -61,28 +59,28 @@ func TestToSystem(t *testing.T) {
 	assert.Equal(t, err.Error(), expected)
 }
 
-func TestPlatform(t *testing.T) {
+func TestConfig(t *testing.T) {
 	msg := "some message"
-	err := failure.Platform(msg)
-	assert.Error(t, err, "failure.Platform is expected to return an error")
-	assert.True(t, failure.IsPlatform(err))
+	err := failure.Config(msg)
+	assert.Error(t, err, "failure.Config is expected to return an error")
+	assert.True(t, failure.IsConfig(err))
 
 	assert.False(t, failure.IsServer(err))
 	assert.False(t, failure.IsSystem(err))
 
-	assert.Contains(t, err.Error(), failure.PlatformMsg)
+	assert.Contains(t, err.Error(), failure.ConfigMsg)
 }
 
-func TestToPlatform(t *testing.T) {
-	msg := "api specific msg"
+func TestToConfig(t *testing.T) {
+	msg := "env var error msg"
 	e := errors.New(msg)
 
-	err := failure.ToPlatform(e, "api x failed")
-	assert.Error(t, err, "failure.ToPlatform is expected to return an error")
-	assert.True(t, failure.IsPlatform(err))
+	err := failure.ToConfig(e, "some env failed")
+	assert.Error(t, err, "failure.ToConfig is expected to return an error")
+	assert.True(t, failure.IsConfig(err))
 
-	expected := fmt.Sprintf("api x failed: api specific msg: %s", failure.PlatformMsg)
-	assert.Equal(t, err.Error(), expected)
+	expected := fmt.Sprintf("some env failed: env var error msg: %s", failure.ConfigMsg)
+	assert.Equal(t, expected, err.Error())
 }
 
 func TestNotFound(t *testing.T) {
@@ -93,7 +91,7 @@ func TestNotFound(t *testing.T) {
 
 	assert.False(t, failure.IsServer(err))
 	assert.False(t, failure.IsSystem(err))
-	assert.False(t, failure.IsPlatform(err))
+	assert.False(t, failure.IsConfig(err))
 
 	assert.Contains(t, err.Error(), failure.NotFoundMsg)
 }
@@ -124,7 +122,7 @@ func TestIsIgnore(t *testing.T) {
 
 	assert.False(t, failure.IsServer(err))
 	assert.False(t, failure.IsSystem(err))
-	assert.False(t, failure.IsPlatform(err))
+	assert.False(t, failure.IsConfig(err))
 	assert.False(t, failure.IsNotFound(err))
 	assert.False(t, failure.IsValidation(err))
 }
@@ -155,7 +153,7 @@ func TestIsValidation(t *testing.T) {
 
 	assert.False(t, failure.IsServer(err))
 	assert.False(t, failure.IsSystem(err))
-	assert.False(t, failure.IsPlatform(err))
+	assert.False(t, failure.IsConfig(err))
 	assert.False(t, failure.IsNotFound(err))
 	assert.False(t, failure.IsIgnore(err))
 }
