@@ -14,7 +14,7 @@ library used to develop AWS Serverless applications using `Golang` and
 `Terraform`. 
 
 ## Usage
-```
+```go
 func SomeFunc() error {
   result, err := some-api.Execute()
   if err != nil {
