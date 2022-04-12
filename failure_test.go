@@ -71,6 +71,30 @@ func TestConfig(t *testing.T) {
 	assert.Contains(t, err.Error(), failure.ConfigMsg)
 }
 
+func TestInvalidParam(t *testing.T) {
+	msg := "some message"
+	err := failure.InvalidParam(msg)
+	assert.Error(t, err, "failure.InvalidParam is expected to return an error")
+	assert.True(t, failure.IsInvalidParam(err))
+
+	assert.False(t, failure.IsServer(err))
+	assert.False(t, failure.IsSystem(err))
+
+	assert.Contains(t, err.Error(), failure.InvalidParamMsg)
+}
+
+func TestToInvalidParam(t *testing.T) {
+	msg := "env var error msg"
+	e := errors.New(msg)
+
+	err := failure.ToInvalidParam(e, "some param failed")
+	assert.Error(t, err, "failure.ToConfig is expected to return an error")
+	assert.True(t, failure.IsInvalidParam(err))
+
+	expected := fmt.Sprintf("some param failed: env var error msg: %s", failure.InvalidParamMsg)
+	assert.Equal(t, expected, err.Error())
+}
+
 func TestToConfig(t *testing.T) {
 	msg := "env var error msg"
 	e := errors.New(msg)

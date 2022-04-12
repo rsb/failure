@@ -9,22 +9,23 @@ import (
 )
 
 const (
-	SystemMsg     = "system failure"
-	ServerMsg     = "server failure"
-	NotFoundMsg   = "not found failure"
-	ValidationMsg = "validation failure"
-	DeferMsg      = "failure occurred inside defer"
-	IgnoreMsg     = "ignore failure"
-	ConfigMsg     = "config failure"
+	SystemMsg       = "system failure"
+	ServerMsg       = "server failure"
+	NotFoundMsg     = "not found failure"
+	ValidationMsg   = "validation failure"
+	DeferMsg        = "failure occurred inside defer"
+	IgnoreMsg       = "ignore failure"
+	ConfigMsg       = "config failure"
+	InvalidParamMsg = "invalid param failure"
 
-	systemErr = err(SystemMsg)
-	serverErr = err(ServerMsg)
-
-	configErr     = err(ConfigMsg)
-	notFoundErr   = err(NotFoundMsg)
-	validationErr = err(ValidationMsg)
-	deferErr      = err(DeferMsg)
-	ignoreErr     = err(IgnoreMsg)
+	systemErr       = err(SystemMsg)
+	serverErr       = err(ServerMsg)
+	configErr       = err(ConfigMsg)
+	notFoundErr     = err(NotFoundMsg)
+	validationErr   = err(ValidationMsg)
+	invalidParamErr = err(InvalidParamMsg)
+	deferErr        = err(DeferMsg)
+	ignoreErr       = err(IgnoreMsg)
 )
 
 type err string
@@ -80,6 +81,21 @@ func IsConfig(err error) bool {
 
 func ToConfig(e error, format string, a ...interface{}) error {
 	cause := Config(e.Error())
+	return Wrap(cause, format, a...)
+}
+
+// InvalidParam is to indicate that the param of a function or any
+// parameter in general is invalid
+func InvalidParam(format string, a ...interface{}) error {
+	return Wrap(invalidParamErr, format, a...)
+}
+
+func IsInvalidParam(err error) bool {
+	return errors.Cause(err) == invalidParamErr
+}
+
+func ToInvalidParam(e error, format string, a ...interface{}) error {
+	cause := InvalidParam(e.Error())
 	return Wrap(cause, format, a...)
 }
 
