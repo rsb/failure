@@ -59,6 +59,29 @@ func TestToSystem(t *testing.T) {
 	assert.Equal(t, err.Error(), expected)
 }
 
+func TestShutdown(t *testing.T) {
+	msg := "some message"
+	err := failure.Shutdown(msg)
+	assert.Error(t, err, "failure.Shutdown is expected to return an error")
+	assert.True(t, failure.IsShutdown(err))
+
+	assert.False(t, failure.IsServer(err))
+
+	assert.Contains(t, err.Error(), failure.ShutdownMsg)
+}
+
+func TestToShutdown(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToShutdown(e, "api x failed")
+	assert.Error(t, err, "failure.ToShutdown is expected to return an error")
+	assert.True(t, failure.IsShutdown(err))
+
+	expected := "api x failed: api specific msg: system shutdown failure"
+	assert.Equal(t, err.Error(), expected)
+}
+
 func TestConfig(t *testing.T) {
 	msg := "some message"
 	err := failure.Config(msg)

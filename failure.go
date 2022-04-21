@@ -17,9 +17,11 @@ const (
 	IgnoreMsg       = "ignore failure"
 	ConfigMsg       = "config failure"
 	InvalidParamMsg = "invalid param failure"
+	ShutdownMsg     = "system shutdown failure"
 
 	systemErr       = err(SystemMsg)
 	serverErr       = err(ServerMsg)
+	shutdownErr     = err(ShutdownMsg)
 	configErr       = err(ConfigMsg)
 	notFoundErr     = err(NotFoundMsg)
 	validationErr   = err(ValidationMsg)
@@ -158,6 +160,20 @@ func IsDefer(err error) bool {
 func ToDefer(e error, format string, a ...interface{}) error {
 	cause := Defer(e.Error())
 	return Wrap(cause, format, a...)
+}
+
+// Shutdown is used to signal that the app should shut down.
+func Shutdown(format string, a ...interface{}) error {
+	return Wrap(shutdownErr, format, a...)
+}
+
+func ToShutdown(e error, format string, a ...interface{}) error {
+	cause := Shutdown(e.Error())
+	return Wrap(cause, format, a...)
+}
+
+func IsShutdown(e error) bool {
+	return errors.Cause(e) == shutdownErr
 }
 
 // Server has the same meaning as Platform or System, it can be used instead if you

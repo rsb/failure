@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2022-04-21
+### Added
+- shutdown error used when a server is signaled to shut down
+
 ## [0.4.0] - 2022-04-11 Added
 ### Added
-- invalid param error was added
+- invalid param error was added 
+
 
 ## [0.3.0] - 2021-09-19
 ### Added
