@@ -241,22 +241,25 @@ func TestToValidation(t *testing.T) {
 }
 
 func TestInput(t *testing.T) {
-	logMsg := "Invalid User type user.ID is empty"
-	lErr := failure.Validation(logMsg)
-
-	inputErr := failure.Input(lErr, "user.ID (%s) is invalid", "xyz")
+	fields := map[string]string{
+		"field1": "invalid option 1",
+		"field2": "invalid option 2",
+	}
+	inputErr := failure.Input(fields, "data given has the following errors")
 
 	assert.Error(t, inputErr, "failure.Input is expected to return an error")
 
-	expected := fmt.Sprintf("Invalid User type user.ID is empty: %s", failure.ValidationMsg)
+	expected := "invalid input: data given has the following errors: field1: invalid option 1,field2: invalid option 2"
 	assert.Equal(t, expected, inputErr.Error())
 
 	assert.True(t, failure.IsInput(inputErr))
-	assert.False(t, failure.IsInput(lErr))
 
-	msg, ok := failure.InputMsg(inputErr)
+	otherErr := errors.New("some other error")
+	assert.False(t, failure.IsInput(otherErr))
+
+	result, ok := failure.InputFields(inputErr)
 	require.True(t, ok)
-	require.Equal(t, "user.ID (xyz) is invalid", msg)
+	assert.Equal(t, fields, result)
 }
 
 func TestDefer(t *testing.T) {

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2022-04-21
+### Fixed
+- input error now supports fields
+
 ## [0.6.0] - 2022-04-21
 ### Added
 - bad request failure to be used in api and middleware code

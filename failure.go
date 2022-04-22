@@ -4,6 +4,7 @@ package failure
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -19,6 +20,7 @@ const (
 	InvalidParamMsg = "invalid param failure"
 	ShutdownMsg     = "system shutdown failure"
 	BadRequestMsg   = "bad request"
+	InputMsg        = "invalid input"
 
 	systemErr       = err(SystemMsg)
 	serverErr       = err(ServerMsg)
@@ -30,6 +32,9 @@ const (
 	deferErr        = err(DeferMsg)
 	ignoreErr       = err(IgnoreMsg)
 	badRequestErr   = err(BadRequestMsg)
+
+	DefaultInputSeparator     = ":"
+	DefaultInputItemSeparator = ","
 )
 
 type err string
@@ -38,19 +43,37 @@ func (e err) Error() string {
 	return string(e)
 }
 
+type InputOpts struct {
+	Sep     string
+	Fields  map[string]string
+	MsgFunc func(msg, sep string, fields map[string]string) string
+}
+
 type inputErr struct {
-	public string
-	log    error
+	header string
+	fields map[string]string
 }
 
 func (e inputErr) Error() string {
-	return e.log.Error()
+	msg := fmt.Sprintf("%s%s %s", InputMsg, DefaultInputSeparator, e.header)
+	if len(e.fields) == 0 {
+		return msg
+	}
+
+	var fields []string
+	for k, v := range e.fields {
+		fields = append(fields, k+DefaultInputSeparator+" "+v)
+
+	}
+
+	msg += ": " + strings.Join(fields, DefaultInputItemSeparator)
+	return msg
 }
 
-func Input(internalErr error, format string, a ...interface{}) error {
+func Input(fields map[string]string, format string, a ...interface{}) error {
 	return inputErr{
-		public: fmt.Sprintf(format, a...),
-		log:    internalErr,
+		header: fmt.Sprintf(format, a...),
+		fields: fields,
 	}
 }
 
@@ -63,14 +86,14 @@ func IsInput(e error) bool {
 	return true
 }
 
-func InputMsg(e error) (string, bool) {
+func InputFields(e error) (map[string]string, bool) {
 	root := errors.Cause(e)
 	i, ok := root.(inputErr)
 	if !ok {
-		return "", false
+		return nil, false
 	}
 
-	return i.public, true
+	return i.fields, true
 }
 
 // Config is used to signify that error occurred when processing the
