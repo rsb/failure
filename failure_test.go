@@ -12,6 +12,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestBadRequest(t *testing.T) {
+	msg := "some message"
+	err := failure.BadRequest(msg)
+	assert.Error(t, err, "failure.BadRequest is expected to return an error")
+	assert.True(t, failure.IsBadRequest(err))
+	assert.Contains(t, err.Error(), failure.BadRequestMsg)
+
+	assert.False(t, failure.IsSystem(err))
+
+}
+
+func TestToBadRequest(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToBadRequest(e, "user messed up")
+	assert.Error(t, err, "failure.ToBadRequest is expected to return an error")
+	assert.True(t, failure.IsBadRequest(err))
+
+	expected := "user messed up: api specific msg: bad request"
+	assert.Equal(t, err.Error(), expected)
+}
+
 func TestServer(t *testing.T) {
 	msg := "some message"
 	err := failure.Server(msg)

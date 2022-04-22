@@ -18,6 +18,7 @@ const (
 	ConfigMsg       = "config failure"
 	InvalidParamMsg = "invalid param failure"
 	ShutdownMsg     = "system shutdown failure"
+	BadRequestMsg   = "bad request"
 
 	systemErr       = err(SystemMsg)
 	serverErr       = err(ServerMsg)
@@ -28,6 +29,7 @@ const (
 	invalidParamErr = err(InvalidParamMsg)
 	deferErr        = err(DeferMsg)
 	ignoreErr       = err(IgnoreMsg)
+	badRequestErr   = err(BadRequestMsg)
 )
 
 type err string
@@ -174,6 +176,20 @@ func ToShutdown(e error, format string, a ...interface{}) error {
 
 func IsShutdown(e error) bool {
 	return errors.Cause(e) == shutdownErr
+}
+
+// BadRequest is used to signal that the app should shut down.
+func BadRequest(format string, a ...interface{}) error {
+	return Wrap(badRequestErr, format, a...)
+}
+
+func ToBadRequest(e error, format string, a ...interface{}) error {
+	cause := BadRequest(e.Error())
+	return Wrap(cause, format, a...)
+}
+
+func IsBadRequest(e error) bool {
+	return errors.Cause(e) == badRequestErr
 }
 
 // Server has the same meaning as Platform or System, it can be used instead if you
