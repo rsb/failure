@@ -43,12 +43,6 @@ func (e err) Error() string {
 	return string(e)
 }
 
-type InputOpts struct {
-	Sep     string
-	Fields  map[string]string
-	MsgFunc func(msg, sep string, fields map[string]string) string
-}
-
 type inputErr struct {
 	header string
 	fields map[string]string
@@ -70,20 +64,30 @@ func (e inputErr) Error() string {
 	return msg
 }
 
-func Input(fields map[string]string, format string, a ...interface{}) error {
+func InvalidInput(fields map[string]string, format string, a ...interface{}) error {
 	return inputErr{
 		header: fmt.Sprintf(format, a...),
 		fields: fields,
 	}
 }
 
-func IsInput(e error) bool {
+func IsInvalidInput(e error) bool {
 	root := errors.Cause(e)
 	if _, ok := root.(inputErr); !ok {
 		return false
 	}
 
 	return true
+}
+
+func InvalidInputMsg(e error) (string, bool) {
+	root := errors.Cause(e)
+	i, ok := root.(inputErr)
+	if !ok {
+		return "", false
+	}
+
+	return i.header, true
 }
 
 func InputFields(e error) (map[string]string, bool) {

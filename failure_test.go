@@ -245,21 +245,26 @@ func TestInput(t *testing.T) {
 		"field1": "invalid option 1",
 		"field2": "invalid option 2",
 	}
-	inputErr := failure.Input(fields, "data given has the following errors")
+	inputErr := failure.InvalidInput(fields, "data given has the following errors")
 
 	assert.Error(t, inputErr, "failure.Input is expected to return an error")
 
 	expected := "invalid input: data given has the following errors: field1: invalid option 1,field2: invalid option 2"
 	assert.Equal(t, expected, inputErr.Error())
 
-	assert.True(t, failure.IsInput(inputErr))
+	assert.True(t, failure.IsInvalidInput(inputErr))
 
 	otherErr := errors.New("some other error")
-	assert.False(t, failure.IsInput(otherErr))
+	assert.False(t, failure.IsInvalidInput(otherErr))
 
 	result, ok := failure.InputFields(inputErr)
 	require.True(t, ok)
 	assert.Equal(t, fields, result)
+
+	out, ok := failure.InvalidInputMsg(inputErr)
+	require.True(t, ok)
+	assert.Equal(t, "data given has the following errors", out)
+
 }
 
 func TestDefer(t *testing.T) {
@@ -271,7 +276,7 @@ func TestDefer(t *testing.T) {
 	assert.Equal(t, expected, err.Error())
 
 	assert.True(t, failure.IsDefer(err))
-	assert.False(t, failure.IsInput(err))
+	assert.False(t, failure.IsInvalidInput(err))
 
 	other := errors.New("some outside err")
 	err = failure.ToDefer(other, "something is wrong")
