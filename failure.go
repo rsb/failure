@@ -10,28 +10,34 @@ import (
 )
 
 const (
-	SystemMsg       = "system failure"
-	ServerMsg       = "server failure"
-	NotFoundMsg     = "not found failure"
-	ValidationMsg   = "validation failure"
-	DeferMsg        = "failure occurred inside defer"
-	IgnoreMsg       = "ignore failure"
-	ConfigMsg       = "config failure"
-	InvalidParamMsg = "invalid param failure"
-	ShutdownMsg     = "system shutdown failure"
-	BadRequestMsg   = "bad request"
-	InputMsg        = "invalid input"
+	SystemMsg           = "system failure"
+	ServerMsg           = "server failure"
+	NotFoundMsg         = "not found failure"
+	NotAuthorizedMsg    = "not authorized failure"
+	NotAuthenticatedMsg = "not authenticated failure"
+	ForbiddenMsg        = "access is forbidden"
+	ValidationMsg       = "validation failure"
+	DeferMsg            = "failure occurred inside defer"
+	IgnoreMsg           = "ignore failure"
+	ConfigMsg           = "config failure"
+	InvalidParamMsg     = "invalid param failure"
+	ShutdownMsg         = "system shutdown failure"
+	BadRequestMsg       = "bad request"
+	InputMsg            = "invalid input"
 
-	systemErr       = err(SystemMsg)
-	serverErr       = err(ServerMsg)
-	shutdownErr     = err(ShutdownMsg)
-	configErr       = err(ConfigMsg)
-	notFoundErr     = err(NotFoundMsg)
-	validationErr   = err(ValidationMsg)
-	invalidParamErr = err(InvalidParamMsg)
-	deferErr        = err(DeferMsg)
-	ignoreErr       = err(IgnoreMsg)
-	badRequestErr   = err(BadRequestMsg)
+	systemErr           = err(SystemMsg)
+	serverErr           = err(ServerMsg)
+	shutdownErr         = err(ShutdownMsg)
+	configErr           = err(ConfigMsg)
+	notFoundErr         = err(NotFoundMsg)
+	notAuthorizedErr    = err(NotAuthorizedMsg)
+	notAuthenticatedErr = err(NotAuthenticatedMsg)
+	forbiddenErr        = err(ForbiddenMsg)
+	validationErr       = err(ValidationMsg)
+	invalidParamErr     = err(InvalidParamMsg)
+	deferErr            = err(DeferMsg)
+	ignoreErr           = err(IgnoreMsg)
+	badRequestErr       = err(BadRequestMsg)
 
 	DefaultInputSeparator     = ":"
 	DefaultInputItemSeparator = ","
@@ -161,6 +167,59 @@ func IsNotFound(err error) bool {
 func ToNotFound(e error, format string, a ...interface{}) error {
 	cause := NotFound(e.Error())
 	return Wrap(cause, format, a...)
+}
+
+// NotAuthorized is used to signify that a resource does not have sufficient
+// access to perform a given task
+func NotAuthorized(format string, a ...interface{}) error {
+	return Wrap(notAuthorizedErr, format, a...)
+}
+
+func IsNotAuthorized(err error) bool {
+	return errors.Cause(err) == notAuthorizedErr
+}
+
+func ToNotAuthorized(e error, format string, a ...interface{}) error {
+	cause := NotAuthorized(e.Error())
+	return Wrap(cause, format, a...)
+}
+
+// NotAuthenticated is used to signify that a resource's identity verification
+// failed. They are not who they claim to be
+func NotAuthenticated(format string, a ...interface{}) error {
+	return Wrap(notAuthenticatedErr, format, a...)
+}
+
+func IsNotAuthenticated(err error) bool {
+	return errors.Cause(err) == notAuthenticatedErr
+}
+
+func ToNotAuthenticated(e error, format string, a ...interface{}) error {
+	cause := NotAuthenticated(e.Error())
+	return Wrap(cause, format, a...)
+}
+
+// Forbidden is used to signify either not authenticated or
+// not authorized
+func Forbidden(format string, a ...interface{}) error {
+	return Wrap(forbiddenErr, format, a...)
+}
+
+func IsForbidden(err error) bool {
+	return errors.Cause(err) == forbiddenErr
+}
+
+func ToForbidden(e error, format string, a ...interface{}) error {
+	cause := Forbidden(e.Error())
+	return Wrap(cause, format, a...)
+}
+
+// IsAnyAuthFailure can be used to determine if any of the following we used:
+// NotAuthenticated, NotAuthorized, Forbidden
+func IsAnyAuthFailure(e error) bool {
+	return IsNotAuthenticated(e) ||
+		IsNotAuthorized(e) ||
+		IsForbidden(e)
 }
 
 // Validation is used to signify that a validation rule as been violated

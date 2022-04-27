@@ -12,6 +12,88 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestIsAnyAuthFailure(t *testing.T) {
+	err := failure.NotFound("something not found")
+	err1 := failure.Forbidden("some message")
+	err2 := failure.NotAuthorized("you are not authorized")
+	err3 := failure.NotAuthenticated("you are not authenticated")
+
+	assert.False(t, failure.IsAnyAuthFailure(err))
+	assert.True(t, failure.IsAnyAuthFailure(err1))
+	assert.True(t, failure.IsAnyAuthFailure(err2))
+	assert.True(t, failure.IsAnyAuthFailure(err3))
+
+}
+
+func TestForbidden(t *testing.T) {
+	msg := "some message"
+	err := failure.Forbidden(msg)
+	assert.Error(t, err, "failure.Forbidden is expected to return an error")
+	assert.Contains(t, err.Error(), failure.ForbiddenMsg)
+
+	assert.True(t, failure.IsForbidden(err))
+	assert.False(t, failure.IsNotAuthorized(err))
+
+}
+
+func TestToForbidden(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToForbidden(e, "not wanted here")
+	assert.Error(t, err, "failure.ToForbidden is expected to return an error")
+	assert.True(t, failure.IsForbidden(err))
+
+	expected := "not wanted here: api specific msg: " + failure.ForbiddenMsg
+	assert.Equal(t, err.Error(), expected)
+}
+
+func TestNotAuthenticated(t *testing.T) {
+	msg := "some message"
+	err := failure.NotAuthenticated(msg)
+	assert.Error(t, err, "failure.NotAuthenticated is expected to return an error")
+	assert.Contains(t, err.Error(), failure.NotAuthenticatedMsg)
+
+	assert.True(t, failure.IsNotAuthenticated(err))
+	assert.False(t, failure.IsNotAuthorized(err))
+
+}
+
+func TestToNotAuthenticated(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToNotAuthenticated(e, "access denied")
+	assert.Error(t, err, "failure.ToNotAuthenticated is expected to return an error")
+	assert.True(t, failure.IsNotAuthenticated(err))
+
+	expected := "access denied: api specific msg: " + failure.NotAuthenticatedMsg
+	assert.Equal(t, err.Error(), expected)
+}
+
+func TestNotAuthorized(t *testing.T) {
+	msg := "some message"
+	err := failure.NotAuthorized(msg)
+	assert.Error(t, err, "failure.NotAuthorized is expected to return an error")
+	assert.Contains(t, err.Error(), failure.NotAuthorizedMsg)
+
+	assert.True(t, failure.IsNotAuthorized(err))
+	assert.False(t, failure.IsSystem(err))
+
+}
+
+func TestToNotAuthorized(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToNotAuthorized(e, "user not allowed")
+	assert.Error(t, err, "failure.ToNotAuthorized is expected to return an error")
+	assert.True(t, failure.IsNotAuthorized(err))
+
+	expected := "user not allowed: api specific msg: " + failure.NotAuthorizedMsg
+	assert.Equal(t, err.Error(), expected)
+}
+
 func TestBadRequest(t *testing.T) {
 	msg := "some message"
 	err := failure.BadRequest(msg)
