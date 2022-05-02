@@ -3,10 +3,8 @@
 package failure
 
 import (
+	"errors"
 	"fmt"
-	"strings"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -23,7 +21,8 @@ const (
 	InvalidParamMsg     = "invalid param failure"
 	ShutdownMsg         = "system shutdown failure"
 	BadRequestMsg       = "bad request"
-	InputMsg            = "invalid input"
+	TimeoutMsg          = "timeout failure"
+	NoMoreRetriesMsg    = "retry limit reached"
 
 	systemErr           = err(SystemMsg)
 	serverErr           = err(ServerMsg)
@@ -38,9 +37,8 @@ const (
 	deferErr            = err(DeferMsg)
 	ignoreErr           = err(IgnoreMsg)
 	badRequestErr       = err(BadRequestMsg)
-
-	DefaultInputSeparator     = ":"
-	DefaultInputItemSeparator = ","
+	timeoutErr          = err(TimeoutMsg)
+	noMoreRetriesErr    = err(NoMoreRetriesMsg)
 )
 
 type err string
@@ -49,61 +47,84 @@ func (e err) Error() string {
 	return string(e)
 }
 
-type inputErr struct {
-	header string
-	fields map[string]string
+type ignoreRetryErr struct {
+	err error
 }
 
-func (e inputErr) Error() string {
-	msg := fmt.Sprintf("%s%s %s", InputMsg, DefaultInputSeparator, e.header)
-	if len(e.fields) == 0 {
-		return msg
-	}
-
-	var fields []string
-	for k, v := range e.fields {
-		fields = append(fields, k+DefaultInputSeparator+" "+v)
-
-	}
-
-	msg += ": " + strings.Join(fields, DefaultInputItemSeparator)
-	return msg
+func (e ignoreRetryErr) Error() string {
+	return e.err.Error()
 }
 
-func InvalidInput(fields map[string]string, format string, a ...interface{}) error {
-	return inputErr{
-		header: fmt.Sprintf(format, a...),
-		fields: fields,
+func (e ignoreRetryErr) Unwrap() error {
+	return e.err
+}
+
+// Timeout is used to signify that error because something was taking
+// too long
+func Timeout(format string, a ...interface{}) error {
+	return Wrap(timeoutErr, format, a...)
+}
+
+func IsTimeout(e error) bool {
+	return errors.Is(e, timeoutErr)
+}
+
+func ToTimeout(e error, format string, a ...interface{}) error {
+	cause := Timeout(e.Error())
+	return Wrap(cause, format, a...)
+}
+
+// NoMoreRetries is used to signal all available retries have been used up
+func NoMoreRetries(format string, a ...interface{}) error {
+	return Wrap(noMoreRetriesErr, format, a...)
+}
+
+func IsNoMoreRetries(e error) bool {
+	return errors.Is(e, noMoreRetriesErr)
+}
+
+func ToNoMoreRetries(e error, format string, a ...interface{}) error {
+	cause := NoMoreRetries(e.Error())
+	return Wrap(cause, format, a...)
+}
+
+// IgnoreRetry is used to signal that this operation should not be
+// retried. Useful in http client middleware that provides operations
+// that are mixed into retry or backoff functions
+func IgnoreRetry(format string, a ...interface{}) error {
+	return ignoreRetryErr{
+		err: errors.New(fmt.Sprintf(format, a...)),
 	}
 }
 
-func IsInvalidInput(e error) bool {
-	root := errors.Cause(e)
-	if _, ok := root.(inputErr); !ok {
+func IsIgnoreRetry(e error) bool {
+	var t ignoreRetryErr
+	if found := errors.As(e, &t); !found {
 		return false
 	}
 
 	return true
 }
 
-func InvalidInputMsg(e error) (string, bool) {
-	root := errors.Cause(e)
-	i, ok := root.(inputErr)
-	if !ok {
-		return "", false
-	}
-
-	return i.header, true
+func ToIgnoreRetry(e error, format string, a ...interface{}) error {
+	cause := IgnoreRetry(e.Error())
+	return Wrap(cause, format, a...)
 }
 
-func InputFields(e error) (map[string]string, bool) {
-	root := errors.Cause(e)
-	i, ok := root.(inputErr)
-	if !ok {
-		return nil, false
+func WrapIgnoreRetry(e error) error {
+	return ignoreRetryErr{
+		err: e,
+	}
+}
+
+func UnwrapIgnoreRetry(e error) error {
+	var t ignoreRetryErr
+
+	if found := errors.As(e, &t); !found {
+		return e
 	}
 
-	return i.fields, true
+	return t.err
 }
 
 // Config is used to signify that error occurred when processing the
@@ -112,8 +133,8 @@ func Config(format string, a ...interface{}) error {
 	return Wrap(configErr, format, a...)
 }
 
-func IsConfig(err error) bool {
-	return errors.Cause(err) == configErr
+func IsConfig(e error) bool {
+	return errors.Is(e, configErr)
 }
 
 func ToConfig(e error, format string, a ...interface{}) error {
@@ -127,8 +148,8 @@ func InvalidParam(format string, a ...interface{}) error {
 	return Wrap(invalidParamErr, format, a...)
 }
 
-func IsInvalidParam(err error) bool {
-	return errors.Cause(err) == invalidParamErr
+func IsInvalidParam(e error) bool {
+	return errors.Is(e, invalidParamErr)
 }
 
 func ToInvalidParam(e error, format string, a ...interface{}) error {
@@ -142,8 +163,8 @@ func Ignore(format string, a ...interface{}) error {
 	return Wrap(ignoreErr, format, a...)
 }
 
-func IsIgnore(err error) bool {
-	return errors.Cause(err) == ignoreErr
+func IsIgnore(e error) bool {
+	return errors.Is(e, ignoreErr)
 }
 
 // ToIgnore converts `e` into the root cause of ignoreErr, it informs the
@@ -160,8 +181,8 @@ func NotFound(format string, a ...interface{}) error {
 	return Wrap(notFoundErr, format, a...)
 }
 
-func IsNotFound(err error) bool {
-	return errors.Cause(err) == notFoundErr
+func IsNotFound(e error) bool {
+	return errors.Is(e, notFoundErr)
 }
 
 func ToNotFound(e error, format string, a ...interface{}) error {
@@ -175,8 +196,8 @@ func NotAuthorized(format string, a ...interface{}) error {
 	return Wrap(notAuthorizedErr, format, a...)
 }
 
-func IsNotAuthorized(err error) bool {
-	return errors.Cause(err) == notAuthorizedErr
+func IsNotAuthorized(e error) bool {
+	return errors.Is(e, notAuthorizedErr)
 }
 
 func ToNotAuthorized(e error, format string, a ...interface{}) error {
@@ -190,8 +211,8 @@ func NotAuthenticated(format string, a ...interface{}) error {
 	return Wrap(notAuthenticatedErr, format, a...)
 }
 
-func IsNotAuthenticated(err error) bool {
-	return errors.Cause(err) == notAuthenticatedErr
+func IsNotAuthenticated(e error) bool {
+	return errors.Is(e, notAuthenticatedErr)
 }
 
 func ToNotAuthenticated(e error, format string, a ...interface{}) error {
@@ -205,8 +226,8 @@ func Forbidden(format string, a ...interface{}) error {
 	return Wrap(forbiddenErr, format, a...)
 }
 
-func IsForbidden(err error) bool {
-	return errors.Cause(err) == forbiddenErr
+func IsForbidden(e error) bool {
+	return errors.Is(e, forbiddenErr)
 }
 
 func ToForbidden(e error, format string, a ...interface{}) error {
@@ -227,8 +248,8 @@ func Validation(format string, a ...interface{}) error {
 	return Wrap(validationErr, format, a...)
 }
 
-func IsValidation(err error) bool {
-	return errors.Cause(err) == validationErr
+func IsValidation(e error) bool {
+	return errors.Is(e, validationErr)
 }
 
 func ToValidation(e error, format string, a ...interface{}) error {
@@ -241,8 +262,8 @@ func Defer(format string, a ...interface{}) error {
 	return Wrap(deferErr, format, a...)
 }
 
-func IsDefer(err error) bool {
-	return errors.Cause(err) == deferErr
+func IsDefer(e error) bool {
+	return errors.Is(e, deferErr)
 }
 
 func ToDefer(e error, format string, a ...interface{}) error {
@@ -261,7 +282,7 @@ func ToShutdown(e error, format string, a ...interface{}) error {
 }
 
 func IsShutdown(e error) bool {
-	return errors.Cause(e) == shutdownErr
+	return errors.Is(e, shutdownErr)
 }
 
 // BadRequest is used to signal that the app should shut down.
@@ -275,7 +296,7 @@ func ToBadRequest(e error, format string, a ...interface{}) error {
 }
 
 func IsBadRequest(e error) bool {
-	return errors.Cause(e) == badRequestErr
+	return errors.Is(e, badRequestErr)
 }
 
 // Server has the same meaning as Platform or System, it can be used instead if you
@@ -286,7 +307,7 @@ func Server(format string, a ...interface{}) error {
 
 // IsServer will return true if the cause is a serverErr
 func IsServer(err error) bool {
-	return errors.Cause(err) == serverErr
+	return errors.Is(err, serverErr)
 }
 
 func ToServer(e error, format string, a ...interface{}) error {
@@ -301,7 +322,7 @@ func System(format string, a ...interface{}) error {
 }
 
 func IsSystem(err error) bool {
-	return errors.Cause(err) == systemErr
+	return errors.Is(err, systemErr)
 }
 
 func ToSystem(e error, format string, a ...interface{}) error {
@@ -311,5 +332,6 @@ func ToSystem(e error, format string, a ...interface{}) error {
 
 // Wrap expose errors.Wrapf as our default wrapping style
 func Wrap(err error, msg string, a ...interface{}) error {
-	return errors.Wrapf(err, msg, a...)
+	msg = fmt.Sprintf(msg, a...)
+	return fmt.Errorf("%s: %w", msg, err)
 }

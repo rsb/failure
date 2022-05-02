@@ -1,16 +1,100 @@
 package failure_test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
-
-	"github.com/stretchr/testify/require"
-
-	"github.com/pkg/errors"
 
 	"github.com/rsb/failure"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestUnwrapIgnoreRetry(t *testing.T) {
+	msg := "api specific msg"
+	middleErr := errors.New(msg)
+
+	err := failure.WrapIgnoreRetry(middleErr)
+	assert.True(t, failure.IsIgnoreRetry(err))
+
+	result := failure.UnwrapIgnoreRetry(err)
+	assert.Equal(t, middleErr, result)
+
+	other := errors.New("some other mesg")
+	assert.False(t, failure.IsIgnoreRetry(other))
+	result = failure.UnwrapIgnoreRetry(other)
+	assert.Equal(t, other, result)
+}
+
+func TestIgnoreRetry(t *testing.T) {
+	msg := "some message"
+	err := failure.IgnoreRetry(msg)
+	assert.Error(t, err, "failure.IgnoreRetryMsg is expected to return an error")
+	assert.Contains(t, err.Error(), msg)
+
+	assert.True(t, failure.IsIgnoreRetry(err))
+
+	// these are very different
+	assert.False(t, failure.IsIgnore(err))
+
+}
+
+func TestToIgnoreRetry(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToIgnoreRetry(e, "dont try again")
+	assert.Error(t, err, "failure.ToIgnoreRetry is expected to return an error")
+	assert.True(t, failure.IsIgnoreRetry(err))
+
+	expected := "dont try again: api specific msg"
+	assert.Equal(t, err.Error(), expected)
+}
+
+func TestNoMoreRetries(t *testing.T) {
+	msg := "some message"
+	err := failure.NoMoreRetries(msg)
+	assert.Error(t, err, "failure.NoMoreRetries is expected to return an error")
+	assert.Contains(t, err.Error(), failure.NoMoreRetriesMsg)
+
+	assert.True(t, failure.IsNoMoreRetries(err))
+	assert.False(t, failure.IsNotAuthorized(err))
+
+}
+
+func TestToNoMoreRetries(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToNoMoreRetries(e, "stop trying")
+	assert.Error(t, err, "failure.ToMoreRetries is expected to return an error")
+	assert.True(t, failure.IsNoMoreRetries(err))
+
+	expected := "stop trying: api specific msg: " + failure.NoMoreRetriesMsg
+	assert.Equal(t, err.Error(), expected)
+}
+
+func TestTimeout(t *testing.T) {
+	msg := "some message"
+	err := failure.Timeout(msg)
+	assert.Error(t, err, "failure.Timeout is expected to return an error")
+	assert.Contains(t, err.Error(), failure.TimeoutMsg)
+
+	assert.True(t, failure.IsTimeout(err))
+	assert.False(t, failure.IsNotAuthorized(err))
+
+}
+
+func TestToTimeout(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToTimeout(e, "this took way too long")
+	assert.Error(t, err, "failure.ToTimeout is expected to return an error")
+	assert.True(t, failure.IsTimeout(err))
+
+	expected := "this took way too long: api specific msg: " + failure.TimeoutMsg
+	assert.Equal(t, err.Error(), expected)
+}
 
 func TestIsAnyAuthFailure(t *testing.T) {
 	err := failure.NotFound("something not found")
@@ -322,33 +406,6 @@ func TestToValidation(t *testing.T) {
 	assert.Equal(t, err.Error(), expected)
 }
 
-func TestInput(t *testing.T) {
-	fields := map[string]string{
-		"field1": "invalid option 1",
-		"field2": "invalid option 2",
-	}
-	inputErr := failure.InvalidInput(fields, "data given has the following errors")
-
-	assert.Error(t, inputErr, "failure.Input is expected to return an error")
-
-	expected := "invalid input: data given has the following errors: field1: invalid option 1,field2: invalid option 2"
-	assert.Equal(t, expected, inputErr.Error())
-
-	assert.True(t, failure.IsInvalidInput(inputErr))
-
-	otherErr := errors.New("some other error")
-	assert.False(t, failure.IsInvalidInput(otherErr))
-
-	result, ok := failure.InputFields(inputErr)
-	require.True(t, ok)
-	assert.Equal(t, fields, result)
-
-	out, ok := failure.InvalidInputMsg(inputErr)
-	require.True(t, ok)
-	assert.Equal(t, "data given has the following errors", out)
-
-}
-
 func TestDefer(t *testing.T) {
 	err := failure.Defer("some error inside a defer")
 
@@ -358,7 +415,7 @@ func TestDefer(t *testing.T) {
 	assert.Equal(t, expected, err.Error())
 
 	assert.True(t, failure.IsDefer(err))
-	assert.False(t, failure.IsInvalidInput(err))
+	assert.False(t, failure.IsNotAuthorized(err))
 
 	other := errors.New("some outside err")
 	err = failure.ToDefer(other, "something is wrong")

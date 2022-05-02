@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2022-05-02
+### Added
+- Timeout, IgnoreRetry
+
+### Changed
+- moved from deprecated github.com/pkg/errors to golang errors pkg
+
+### Removed 
+- InvalidInput until I can rework a better api
+
 ## [0.7.0] - 2022-04-21
 ### Added
 - NotAuthorized
