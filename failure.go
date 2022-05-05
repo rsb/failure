@@ -22,7 +22,6 @@ const (
 	ShutdownMsg         = "system shutdown failure"
 	BadRequestMsg       = "bad request"
 	TimeoutMsg          = "timeout failure"
-	NoMoreRetriesMsg    = "retry limit reached"
 
 	systemErr           = err(SystemMsg)
 	serverErr           = err(ServerMsg)
@@ -38,25 +37,12 @@ const (
 	ignoreErr           = err(IgnoreMsg)
 	badRequestErr       = err(BadRequestMsg)
 	timeoutErr          = err(TimeoutMsg)
-	noMoreRetriesErr    = err(NoMoreRetriesMsg)
 )
 
 type err string
 
 func (e err) Error() string {
 	return string(e)
-}
-
-type ignoreRetryErr struct {
-	err error
-}
-
-func (e ignoreRetryErr) Error() string {
-	return e.err.Error()
-}
-
-func (e ignoreRetryErr) Unwrap() error {
-	return e.err
 }
 
 // Timeout is used to signify that error because something was taking
@@ -72,59 +58,6 @@ func IsTimeout(e error) bool {
 func ToTimeout(e error, format string, a ...interface{}) error {
 	cause := Timeout(e.Error())
 	return Wrap(cause, format, a...)
-}
-
-// NoMoreRetries is used to signal all available retries have been used up
-func NoMoreRetries(format string, a ...interface{}) error {
-	return Wrap(noMoreRetriesErr, format, a...)
-}
-
-func IsNoMoreRetries(e error) bool {
-	return errors.Is(e, noMoreRetriesErr)
-}
-
-func ToNoMoreRetries(e error, format string, a ...interface{}) error {
-	cause := NoMoreRetries(e.Error())
-	return Wrap(cause, format, a...)
-}
-
-// IgnoreRetry is used to signal that this operation should not be
-// retried. Useful in http client middleware that provides operations
-// that are mixed into retry or backoff functions
-func IgnoreRetry(format string, a ...interface{}) error {
-	return ignoreRetryErr{
-		err: errors.New(fmt.Sprintf(format, a...)),
-	}
-}
-
-func IsIgnoreRetry(e error) bool {
-	var t ignoreRetryErr
-	if found := errors.As(e, &t); !found {
-		return false
-	}
-
-	return true
-}
-
-func ToIgnoreRetry(e error, format string, a ...interface{}) error {
-	cause := IgnoreRetry(e.Error())
-	return Wrap(cause, format, a...)
-}
-
-func WrapIgnoreRetry(e error) error {
-	return ignoreRetryErr{
-		err: e,
-	}
-}
-
-func UnwrapIgnoreRetry(e error) error {
-	var t ignoreRetryErr
-
-	if found := errors.As(e, &t); !found {
-		return e
-	}
-
-	return t.err
 }
 
 // Config is used to signify that error occurred when processing the
