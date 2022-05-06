@@ -112,6 +112,8 @@ if ok {
 ### Timeout
 Describes failures that occurred because something took too long
 
+
+## General Usage
 ```go
   func(db *Client) Insert(ctx context.Context, model business.Model) error {
     ...
