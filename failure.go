@@ -22,6 +22,7 @@ const (
 	ShutdownMsg         = "system shutdown failure"
 	BadRequestMsg       = "bad request"
 	TimeoutMsg          = "timeout failure"
+	StartupMsg          = "failure occurred during startup"
 
 	systemErr           = err(SystemMsg)
 	serverErr           = err(ServerMsg)
@@ -37,12 +38,27 @@ const (
 	ignoreErr           = err(IgnoreMsg)
 	badRequestErr       = err(BadRequestMsg)
 	timeoutErr          = err(TimeoutMsg)
+	startupErr          = err(StartupMsg)
 )
 
 type err string
 
 func (e err) Error() string {
 	return string(e)
+}
+
+// Startup is used to signify a failure preventing the system from starting up
+func Startup(format string, a ...interface{}) error {
+	return Wrap(startupErr, format, a...)
+}
+
+func IsStartup(e error) bool {
+	return errors.Is(e, startupErr)
+}
+
+func ToStartup(e error, format string, a ...interface{}) error {
+	cause := Startup(e.Error())
+	return Wrap(cause, format, a...)
 }
 
 // Timeout is used to signify that error because something was taking

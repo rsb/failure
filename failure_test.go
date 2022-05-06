@@ -9,6 +9,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestStartup(t *testing.T) {
+	msg := "some message"
+	err := failure.Startup(msg)
+	assert.Error(t, err, "failure.Startup is expected to return an error")
+	assert.Contains(t, err.Error(), failure.StartupMsg)
+
+	assert.True(t, failure.IsStartup(err))
+	assert.False(t, failure.IsTimeout(err))
+
+}
+
+func TestToStartup(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToStartup(e, "initialized wrong")
+	assert.Error(t, err, "failure.ToStartup is expected to return an error")
+	assert.True(t, failure.IsStartup(err))
+
+	expected := "initialized wrong: api specific msg: " + failure.StartupMsg
+	assert.Equal(t, err.Error(), expected)
+}
+
 func TestTimeout(t *testing.T) {
 	msg := "some message"
 	err := failure.Timeout(msg)

@@ -55,7 +55,7 @@ func (e *Multi) WrappedErrors() []error {
 // etc. The order will match the order of Errors in the failure.Multi
 // at the time of calling.
 //
-// The resulting error supports errors.As/Is/Unwrap so you can continue
+// The resulting error supports errors.As/Is/Unwrap, so you can continue
 // to use the stdlib errors package to introspect further.
 //
 // This will perform a shallow copy of the errors slice. Any errors appended
@@ -163,6 +163,15 @@ func IsMultiple(e error) bool {
 	default:
 		return false
 	}
+}
+
+func MultiResult(e error) ([]error, bool) {
+	err, ok := e.(*Multi)
+	if !ok {
+		return []error{}, false
+	}
+
+	return err.Failures, true
 }
 
 // ListFormatFn is a basic formatter that outputs the number of errors

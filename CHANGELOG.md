@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [0.9.0] - 2022-05-06
+### Added
+- support for multiple errors 
+- startup failure
+
 ## [0.8.0] - 2022-05-02
 ### Added
 - Timeout, IgnoreRetry
