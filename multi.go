@@ -157,12 +157,18 @@ func Multiple(errs []error, opt ...MultiFormatFn) *Multi {
 }
 
 func IsMultiple(e error) bool {
-	switch e.(type) {
-	case *Multi:
+	var t *Multi
+
+	if errors.As(e, &t) {
 		return true
-	default:
-		return false
 	}
+
+	l := errors.Unwrap(e)
+	if errors.As(l, &t) {
+		return true
+	}
+
+	return false
 }
 
 func MultiResult(e error) ([]error, bool) {
