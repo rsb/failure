@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+## [0.10.0] - 2022-05-11
+### Added 
+- Panic, RestAPI failures
 
 ## [0.9.1] - 2022-05-09
 ### Fixed

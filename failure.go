@@ -20,9 +20,11 @@ const (
 	ConfigMsg           = "config failure"
 	InvalidParamMsg     = "invalid param failure"
 	ShutdownMsg         = "system shutdown failure"
-	BadRequestMsg       = "bad request"
 	TimeoutMsg          = "timeout failure"
 	StartupMsg          = "failure occurred during startup"
+	PanicMsg            = "panic"
+	BadRequestMsg       = "bad request"
+	InvalidAPIFieldsMsg = "http input fields are not valid"
 
 	systemErr           = err(SystemMsg)
 	serverErr           = err(ServerMsg)
@@ -36,15 +38,31 @@ const (
 	invalidParamErr     = err(InvalidParamMsg)
 	deferErr            = err(DeferMsg)
 	ignoreErr           = err(IgnoreMsg)
-	badRequestErr       = err(BadRequestMsg)
 	timeoutErr          = err(TimeoutMsg)
 	startupErr          = err(StartupMsg)
+	panicErr            = err(PanicMsg)
+	badRequestErr       = err(BadRequestMsg)
+	invalidAPIFieldsErr = err(InvalidAPIFieldsMsg)
 )
 
 type err string
 
 func (e err) Error() string {
 	return string(e)
+}
+
+// Panic is used in panic recovery blocks
+func Panic(format string, a ...interface{}) error {
+	return Wrap(panicErr, format, a...)
+}
+
+func IsPanic(e error) bool {
+	return errors.Is(e, panicErr)
+}
+
+func ToPanic(e error, format string, a ...interface{}) error {
+	cause := Panic(e.Error())
+	return Wrap(cause, format, a...)
 }
 
 // Startup is used to signify a failure preventing the system from starting up
@@ -232,20 +250,6 @@ func ToShutdown(e error, format string, a ...interface{}) error {
 
 func IsShutdown(e error) bool {
 	return errors.Is(e, shutdownErr)
-}
-
-// BadRequest is used to signal that the app should shut down.
-func BadRequest(format string, a ...interface{}) error {
-	return Wrap(badRequestErr, format, a...)
-}
-
-func ToBadRequest(e error, format string, a ...interface{}) error {
-	cause := BadRequest(e.Error())
-	return Wrap(cause, format, a...)
-}
-
-func IsBadRequest(e error) bool {
-	return errors.Is(e, badRequestErr)
 }
 
 // Server has the same meaning as Platform or System, it can be used instead if you
