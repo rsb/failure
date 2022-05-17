@@ -8,41 +8,45 @@ import (
 )
 
 const (
-	SystemMsg           = "system failure"
-	ServerMsg           = "server failure"
-	NotFoundMsg         = "not found failure"
-	NotAuthorizedMsg    = "not authorized failure"
-	NotAuthenticatedMsg = "not authenticated failure"
-	ForbiddenMsg        = "access is forbidden"
-	ValidationMsg       = "validation failure"
-	DeferMsg            = "failure occurred inside defer"
-	IgnoreMsg           = "ignore failure"
-	ConfigMsg           = "config failure"
-	InvalidParamMsg     = "invalid param failure"
-	ShutdownMsg         = "system shutdown failure"
-	TimeoutMsg          = "timeout failure"
-	StartupMsg          = "failure occurred during startup"
-	PanicMsg            = "panic"
-	BadRequestMsg       = "bad request"
-	InvalidAPIFieldsMsg = "http input fields are not valid"
+	SystemMsg             = "system failure"
+	ServerMsg             = "server failure"
+	NotFoundMsg           = "not found failure"
+	NotAuthorizedMsg      = "not authorized failure"
+	NotAuthenticatedMsg   = "not authenticated failure"
+	ForbiddenMsg          = "access is forbidden"
+	ValidationMsg         = "validation failure"
+	DeferMsg              = "failure occurred inside defer"
+	IgnoreMsg             = "ignore failure"
+	ConfigMsg             = "config failure"
+	InvalidParamMsg       = "invalid param failure"
+	ShutdownMsg           = "system shutdown failure"
+	TimeoutMsg            = "timeout failure"
+	StartupMsg            = "failure occurred during startup"
+	PanicMsg              = "panic"
+	BadRequestMsg         = "bad request"
+	InvalidAPIFieldsMsg   = "http input fields are not valid"
+	MissingFromContextMsg = "resource not in context"
+	AlreadyExistsMsg      = "duplicate resource already exists"
 
-	systemErr           = err(SystemMsg)
-	serverErr           = err(ServerMsg)
-	shutdownErr         = err(ShutdownMsg)
-	configErr           = err(ConfigMsg)
-	notFoundErr         = err(NotFoundMsg)
-	notAuthorizedErr    = err(NotAuthorizedMsg)
-	notAuthenticatedErr = err(NotAuthenticatedMsg)
-	forbiddenErr        = err(ForbiddenMsg)
-	validationErr       = err(ValidationMsg)
-	invalidParamErr     = err(InvalidParamMsg)
-	deferErr            = err(DeferMsg)
-	ignoreErr           = err(IgnoreMsg)
-	timeoutErr          = err(TimeoutMsg)
-	startupErr          = err(StartupMsg)
-	panicErr            = err(PanicMsg)
-	badRequestErr       = err(BadRequestMsg)
-	invalidAPIFieldsErr = err(InvalidAPIFieldsMsg)
+	systemErr             = err(SystemMsg)
+	serverErr             = err(ServerMsg)
+	shutdownErr           = err(ShutdownMsg)
+	configErr             = err(ConfigMsg)
+	notFoundErr           = err(NotFoundMsg)
+	notAuthorizedErr      = err(NotAuthorizedMsg)
+	notAuthenticatedErr   = err(NotAuthenticatedMsg)
+	forbiddenErr          = err(ForbiddenMsg)
+	validationErr         = err(ValidationMsg)
+	invalidParamErr       = err(InvalidParamMsg)
+	deferErr              = err(DeferMsg)
+	ignoreErr             = err(IgnoreMsg)
+	timeoutErr            = err(TimeoutMsg)
+	startupErr            = err(StartupMsg)
+	panicErr              = err(PanicMsg)
+	badRequestErr         = err(BadRequestMsg)
+	invalidAPIFieldsErr   = err(InvalidAPIFieldsMsg)
+	missingFromContextErr = err(MissingFromContextMsg)
+	alreadyExistsErr      = err(AlreadyExistsMsg)
 )
 
 type err string
@@ -51,7 +55,8 @@ func (e err) Error() string {
 	return string(e)
 }
 
-// Panic is used in panic recovery blocks
+// Panic is used in panic recovery blocks or to indicate that you should
+// panic if you receive this error
 func Panic(format string, a ...interface{}) error {
 	return Wrap(panicErr, format, a...)
 }
@@ -62,6 +67,35 @@ func IsPanic(e error) bool {
 
 func ToPanic(e error, format string, a ...interface{}) error {
 	cause := Panic(e.Error())
+	return Wrap(cause, format, a...)
+}
+
+// MissingFromContext is used to indicate a resource was supposed to be in the
+// context but is missing
+func MissingFromContext(format string, a ...interface{}) error {
+	return Wrap(missingFromContextErr, format, a...)
+}
+
+func IsMissingFromContext(e error) bool {
+	return errors.Is(e, missingFromContextErr)
+}
+
+func ToMissingFromContext(e error, format string, a ...interface{}) error {
+	cause := MissingFromContext(e.Error())
+	return Wrap(cause, format, a...)
+}
+
+// AlreadyExists is used to indicate that the given resource already exists
+func AlreadyExists(format string, a ...interface{}) error {
+	return Wrap(alreadyExistsErr, format, a...)
+}
+
+func IsAlreadyExists(e error) bool {
+	return errors.Is(e, alreadyExistsErr)
+}
+
+func ToAlreadyExists(e error, format string, a ...interface{}) error {
+	cause := AlreadyExists(e.Error())
 	return Wrap(cause, format, a...)
 }
 

@@ -9,6 +9,72 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMissingFromContext(t *testing.T) {
+	msg := "some message"
+	err := failure.MissingFromContext(msg)
+	assert.Error(t, err, "failure.MissingFromContext is expected to return an error")
+	assert.Contains(t, err.Error(), failure.MissingFromContextMsg)
+
+	assert.True(t, failure.IsMissingFromContext(err))
+	assert.False(t, failure.IsMissingFromContext(errors.New("something else")))
+}
+
+func TestToMissingFromContext(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToMissingFromContext(e, "where is the claim")
+	assert.Error(t, err, "failure.ToMissingFromContext is expected to return an error")
+	assert.True(t, failure.IsMissingFromContext(err))
+
+	expected := "where is the claim: api specific msg: " + failure.MissingFromContextMsg
+	assert.Equal(t, err.Error(), expected)
+}
+
+func TestPanic(t *testing.T) {
+	msg := "some message"
+	err := failure.Panic(msg)
+	assert.Error(t, err, "failure.Panic is expected to return an error")
+	assert.Contains(t, err.Error(), failure.PanicMsg)
+
+	assert.True(t, failure.IsPanic(err))
+	assert.False(t, failure.IsPanic(errors.New("something else")))
+}
+
+func TestToPanic(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToPanic(e, "this is not good")
+	assert.Error(t, err, "failure.ToPanic is expected to return an error")
+	assert.True(t, failure.IsPanic(err))
+
+	expected := "this is not good: api specific msg: " + failure.PanicMsg
+	assert.Equal(t, err.Error(), expected)
+}
+
+func TestAlreadyExists(t *testing.T) {
+	msg := "some message"
+	err := failure.AlreadyExists(msg)
+	assert.Error(t, err, "failure.Already is expected to return an error")
+	assert.Contains(t, err.Error(), failure.AlreadyExistsMsg)
+
+	assert.True(t, failure.IsAlreadyExists(err))
+	assert.False(t, failure.IsAlreadyExists(errors.New("something else")))
+}
+
+func TestToAlreadyExists(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToAlreadyExists(e, "this is duplicated")
+	assert.Error(t, err, "failure.ToAlreadyExists is expected to return an error")
+	assert.True(t, failure.IsAlreadyExists(err))
+
+	expected := "this is duplicated: api specific msg: " + failure.AlreadyExistsMsg
+	assert.Equal(t, err.Error(), expected)
+}
+
 func TestStartup(t *testing.T) {
 	msg := "some message"
 	err := failure.Startup(msg)
