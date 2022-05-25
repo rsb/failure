@@ -9,6 +9,28 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestOutOfRange(t *testing.T) {
+	msg := "invalid offset"
+	err := failure.OutOfRange(msg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), failure.OutOfRangeMsg)
+
+	assert.True(t, failure.IsOutOfRange(err))
+	assert.False(t, failure.IsOutOfRange(errors.New("something else")))
+}
+
+func TestToOutOfRange(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToOutOfRange(e, "invalid index")
+	assert.Error(t, err)
+	assert.True(t, failure.IsOutOfRange(err))
+
+	expected := "invalid index: api specific msg: " + failure.OutOfRangeMsg
+	assert.Equal(t, err.Error(), expected)
+}
+
 func TestMissingFromContext(t *testing.T) {
 	msg := "some message"
 	err := failure.MissingFromContext(msg)

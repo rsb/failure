@@ -27,6 +27,7 @@ const (
 	InvalidAPIFieldsMsg   = "http input fields are not valid"
 	MissingFromContextMsg = "resource not in context"
 	AlreadyExistsMsg      = "duplicate resource already exists"
+	OutOfRangeMsg         = "out of range failure"
 
 	systemErr             = err(SystemMsg)
 	serverErr             = err(ServerMsg)
@@ -47,12 +48,28 @@ const (
 	invalidAPIFieldsErr   = err(InvalidAPIFieldsMsg)
 	missingFromContextErr = err(MissingFromContextMsg)
 	alreadyExistsErr      = err(AlreadyExistsMsg)
+	outOfRangeErr         = err(OutOfRangeMsg)
 )
 
 type err string
 
 func (e err) Error() string {
 	return string(e)
+}
+
+// OutOfRange is used to signal that the offset of a map is invalid or
+// some index for a list is incorrect
+func OutOfRange(format string, a ...interface{}) error {
+	return Wrap(outOfRangeErr, format, a...)
+}
+
+func IsOutOfRange(e error) bool {
+	return errors.Is(e, outOfRangeErr)
+}
+
+func ToOutOfRange(e error, format string, a ...interface{}) error {
+	cause := OutOfRange(e.Error())
+	return Wrap(cause, format, a...)
 }
 
 // Panic is used in panic recovery blocks or to indicate that you should
