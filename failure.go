@@ -30,6 +30,7 @@ const (
 	OutOfRangeMsg         = "out of range failure"
 	WarnMsg               = "warning"
 	NoChangeMsg           = "no change has occurred"
+	InvalidStateMsg       = "invalid state"
 
 	systemErr             = err(SystemMsg)
 	serverErr             = err(ServerMsg)
@@ -53,12 +54,27 @@ const (
 	outOfRangeErr         = err(OutOfRangeMsg)
 	warnErr               = err(WarnMsg)
 	noChangeErr           = err(NoChangeMsg)
+	invalidStateErr       = err(InvalidStateMsg)
 )
 
 type err string
 
 func (e err) Error() string {
 	return string(e)
+}
+
+// InvalidState is used to signal that the resource is not in a valid state
+func InvalidState(format string, a ...interface{}) error {
+	return Wrap(invalidStateErr, format, a...)
+}
+
+func IsInvalidState(e error) bool {
+	return errors.Is(e, invalidStateErr)
+}
+
+func ToInvalidState(e error, format string, a ...interface{}) error {
+	cause := InvalidState(e.Error())
+	return Wrap(cause, format, a...)
 }
 
 // NoChange is used to signal that if you expected something to change,

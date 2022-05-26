@@ -9,6 +9,28 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestInvalidState(t *testing.T) {
+	msg := "something is not right"
+	err := failure.InvalidState(msg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), failure.InvalidStateMsg)
+
+	assert.True(t, failure.IsInvalidState(err))
+	assert.False(t, failure.IsInvalidState(errors.New("something else")))
+}
+
+func TestToInvalidState(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToInvalidState(e, "its not right")
+	assert.Error(t, err)
+	assert.True(t, failure.IsInvalidState(err))
+
+	expected := "its not right: api specific msg: " + failure.InvalidStateMsg
+	assert.Equal(t, err.Error(), expected)
+}
+
 func TestNoChange(t *testing.T) {
 	msg := "data has not changed"
 	err := failure.NoChange(msg)
