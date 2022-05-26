@@ -28,6 +28,8 @@ const (
 	MissingFromContextMsg = "resource not in context"
 	AlreadyExistsMsg      = "duplicate resource already exists"
 	OutOfRangeMsg         = "out of range failure"
+	WarnMsg               = "warning"
+	NoChangeMsg           = "no change has occurred"
 
 	systemErr             = err(SystemMsg)
 	serverErr             = err(ServerMsg)
@@ -49,12 +51,44 @@ const (
 	missingFromContextErr = err(MissingFromContextMsg)
 	alreadyExistsErr      = err(AlreadyExistsMsg)
 	outOfRangeErr         = err(OutOfRangeMsg)
+	warnErr               = err(WarnMsg)
+	noChangeErr           = err(NoChangeMsg)
 )
 
 type err string
 
 func (e err) Error() string {
 	return string(e)
+}
+
+// NoChange is used to signal that if you expected something to change,
+// it has not.
+func NoChange(format string, a ...interface{}) error {
+	return Wrap(noChangeErr, format, a...)
+}
+
+func IsNoChange(e error) bool {
+	return errors.Is(e, noChangeErr)
+}
+
+func ToNoChange(e error, format string, a ...interface{}) error {
+	cause := NoChange(e.Error())
+	return Wrap(cause, format, a...)
+}
+
+// Warn is used to signal that this error is only a warning. It can be
+// used instead of ignore to change the log level of a system
+func Warn(format string, a ...interface{}) error {
+	return Wrap(warnErr, format, a...)
+}
+
+func IsWarn(e error) bool {
+	return errors.Is(e, warnErr)
+}
+
+func ToWarn(e error, format string, a ...interface{}) error {
+	cause := Warn(e.Error())
+	return Wrap(cause, format, a...)
 }
 
 // OutOfRange is used to signal that the offset of a map is invalid or

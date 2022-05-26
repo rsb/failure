@@ -6,7 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
-## [0.12.0] - 2022-05-17
+## [0.13.0] - 2022-05-26
+### Added
+- NoChange and Warn failures
+
+## [0.12.0] - 2022-05-25
 ### Added
 - OutOfRange failure
  

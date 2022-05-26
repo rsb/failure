@@ -9,6 +9,50 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNoChange(t *testing.T) {
+	msg := "data has not changed"
+	err := failure.NoChange(msg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), failure.NoChangeMsg)
+
+	assert.True(t, failure.IsNoChange(err))
+	assert.False(t, failure.IsNoChange(errors.New("something else")))
+}
+
+func TestToNoChange(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToNoChange(e, "nothing to do")
+	assert.Error(t, err)
+	assert.True(t, failure.IsNoChange(err))
+
+	expected := "nothing to do: api specific msg: " + failure.NoChangeMsg
+	assert.Equal(t, err.Error(), expected)
+}
+
+func TestWarn(t *testing.T) {
+	msg := "not really important"
+	err := failure.Warn(msg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), failure.WarnMsg)
+
+	assert.True(t, failure.IsWarn(err))
+	assert.False(t, failure.IsWarn(errors.New("something else")))
+}
+
+func TestToWarn(t *testing.T) {
+	msg := "api specific msg"
+	e := errors.New(msg)
+
+	err := failure.ToWarn(e, "should be fixed in the future")
+	assert.Error(t, err)
+	assert.True(t, failure.IsWarn(err))
+
+	expected := "should be fixed in the future: api specific msg: " + failure.WarnMsg
+	assert.Equal(t, err.Error(), expected)
+}
+
 func TestOutOfRange(t *testing.T) {
 	msg := "invalid offset"
 	err := failure.OutOfRange(msg)
