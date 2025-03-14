@@ -32,9 +32,9 @@ const (
 	NoChangeMsg           = "no change has occurred"
 	InvalidStateMsg       = "invalid state"
 
-	systemErr             = err(SystemMsg)
-	serverErr             = err(ServerMsg)
-	shutdownErr           = err(ShutdownMsg)
+	SystemErr             = err(SystemMsg)
+	ServerErr             = err(ServerMsg)
+	ShutdownErr           = err(ShutdownMsg)
 	configErr             = err(ConfigMsg)
 	notFoundErr           = err(NotFoundMsg)
 	notAuthorizedErr      = err(NotAuthorizedMsg)
@@ -341,7 +341,7 @@ func ToDefer(e error, format string, a ...interface{}) error {
 
 // Shutdown is used to signal that the app should shut down.
 func Shutdown(format string, a ...interface{}) error {
-	return Wrap(shutdownErr, format, a...)
+	return Wrap(ShutdownErr, format, a...)
 }
 
 func ToShutdown(e error, format string, a ...interface{}) error {
@@ -350,18 +350,18 @@ func ToShutdown(e error, format string, a ...interface{}) error {
 }
 
 func IsShutdown(e error) bool {
-	return errors.Is(e, shutdownErr)
+	return errors.Is(e, ShutdownErr)
 }
 
 // Server has the same meaning as Platform or System, it can be used instead if you
 // don't like how Platform or System reads in your code.
 func Server(format string, a ...interface{}) error {
-	return Wrap(serverErr, format, a...)
+	return Wrap(ServerErr, format, a...)
 }
 
 // IsServer will return true if the cause is a serverErr
 func IsServer(err error) bool {
-	return errors.Is(err, serverErr)
+	return errors.Is(err, ServerErr)
 }
 
 func ToServer(e error, format string, a ...interface{}) error {
@@ -372,11 +372,11 @@ func ToServer(e error, format string, a ...interface{}) error {
 // System is has the same meaning as Platform or Server, it can be used instead if you
 // don't like how Platform reads in your code
 func System(format string, a ...interface{}) error {
-	return Wrap(systemErr, format, a...)
+	return Wrap(SystemErr, format, a...)
 }
 
 func IsSystem(err error) bool {
-	return errors.Is(err, systemErr)
+	return errors.Is(err, SystemErr)
 }
 
 func ToSystem(e error, format string, a ...interface{}) error {
