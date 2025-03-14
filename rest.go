@@ -17,7 +17,7 @@ func (r *RestAPI) Error() string {
 	return r.Err.Error()
 }
 
-func NewInvalidFields(f map[string]string, msg string, a ...interface{}) *RestAPI {
+func NewInvalidFields(f map[string]string, msg string, a ...any) *RestAPI {
 	r := RestAPI{
 		StatusCode: http.StatusUnprocessableEntity,
 		Msg:        fmt.Sprintf(msg, a...),
@@ -28,7 +28,7 @@ func NewInvalidFields(f map[string]string, msg string, a ...interface{}) *RestAP
 	return &r
 }
 
-func InvalidFields(f map[string]string, msg string, a ...interface{}) error {
+func InvalidFields(f map[string]string, msg string, a ...any) error {
 	return NewInvalidFields(f, msg, a...)
 }
 
@@ -51,7 +51,7 @@ func IsInvalidFields(e error) bool {
 	return false
 }
 
-func NewBadRequest(msg string, a ...interface{}) *RestAPI {
+func NewBadRequest(msg string, a ...any) *RestAPI {
 	r := RestAPI{
 		StatusCode: http.StatusBadRequest,
 		Msg:        fmt.Sprintf(msg, a...),
@@ -60,11 +60,11 @@ func NewBadRequest(msg string, a ...interface{}) *RestAPI {
 	return &r
 }
 
-func BadRequest(msg string, a ...interface{}) error {
+func BadRequest(msg string, a ...any) error {
 	return NewBadRequest(msg, a...)
 }
 
-func ToBadRequest(e error, msg string, a ...interface{}) error {
+func ToBadRequest(e error, msg string, a ...any) error {
 	r := RestAPI{
 		StatusCode: http.StatusBadRequest,
 		Msg:        fmt.Sprintf(msg, a...),
@@ -116,9 +116,5 @@ func RestError(e error) (error, bool) {
 func IsRestAPI(e error) bool {
 	var r *RestAPI
 
-	if errors.As(e, &r) {
-		return true
-	}
-
-	return false
+	return errors.As(e, &r)
 }
