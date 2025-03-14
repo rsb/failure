@@ -22,7 +22,7 @@ func NewInvalidFields(f map[string]string, msg string, a ...interface{}) *RestAP
 		StatusCode: http.StatusUnprocessableEntity,
 		Msg:        fmt.Sprintf(msg, a...),
 		Fields:     f,
-		Err:        invalidAPIFieldsErr,
+		Err:        InvalidAPIFieldsErr,
 	}
 
 	return &r
@@ -55,7 +55,7 @@ func NewBadRequest(msg string, a ...interface{}) *RestAPI {
 	r := RestAPI{
 		StatusCode: http.StatusBadRequest,
 		Msg:        fmt.Sprintf(msg, a...),
-		Err:        badRequestErr,
+		Err:        BadRequestErr,
 	}
 	return &r
 }
