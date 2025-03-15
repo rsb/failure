@@ -2,6 +2,7 @@ package failure_test
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -9,6 +10,116 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func Test_FieldError_Success(t *testing.T) {
+	key := "field-a"
+	msg := "error a"
+	err := failure.NewFormField(key, msg)
+	require.Error(t, err)
+
+	expected := fmt.Sprintf("%s: %s", key, msg)
+	assert.Equal(t, key, err.Key)
+	assert.Equal(t, msg, err.Msg)
+	assert.Equal(t, expected, err.Error())
+	assert.True(t, failure.IsFieldError(err))
+}
+
+func Test_FieldErrorGroup_Success_Empty(t *testing.T) {
+	name := "group-a"
+	group := failure.NewFormFieldGroup(name)
+	require.NotNil(t, group)
+
+	assert.Equal(t, name, group.Name)
+	assert.Empty(t, group.Fields)
+	assert.Equal(t, 0, group.ErrorCount())
+
+	msg := ""
+	assert.Equal(t, msg, group.Error())
+}
+
+func Test_FieldErrorGroup_Success_AddField(t *testing.T) {
+	name := "group-a"
+	group := failure.NewFormFieldGroup(name)
+	require.NotNil(t, group)
+
+	key := "field-a"
+	msg := "error a"
+	group.AddField(key, msg)
+	assert.Equal(t, 1, group.ErrorCount())
+
+	expected := "group-a(field-a: error a)"
+	assert.Contains(t, group.Error(), expected)
+
+	assert.True(t, group.HasErrors())
+	assert.False(t, group.HasError("foo"))
+	assert.True(t, group.HasError(key))
+
+	assert.Empty(t, group.Message("foo"))
+	assert.Equal(t, msg, group.Message(key))
+
+	assert.Nil(t, group.Field("foo"))
+	assert.Equal(t, group.Fields[0], *group.Field(key))
+}
+
+func Test_FieldErrorGroup_Success_AddField_WhenNil(t *testing.T) {
+
+	group := failure.FormFieldGroup{
+		Name: "group-a",
+	}
+
+	group.AddField("field-a", "error-a")
+	assert.Equal(t, 1, group.ErrorCount())
+
+	expected := "group-a(field-a: error-a)"
+	assert.Contains(t, group.Error(), expected)
+}
+
+func Test_FormFieldGroup_Add_Success(t *testing.T) {
+	name := "group-a"
+	group := failure.NewFormFieldGroup(name)
+	require.NotNil(t, group)
+
+	key1 := "field-a"
+	msg1 := "error a"
+	field1 := failure.NewFormField(key1, msg1)
+
+	key2 := "field-b"
+	msg2 := "error b"
+	field2 := failure.NewFormField(key2, msg2)
+
+	group.Add(field1, field2)
+	assert.Equal(t, 2, group.ErrorCount())
+
+	expected := "group-a(field-a: error a, field-b: error b)"
+	assert.Contains(t, group.Error(), expected)
+	assert.True(t, group.HasErrors())
+}
+
+func Test_NewForm_Success(t *testing.T) {
+	key := "form-a"
+	form := failure.NewForm(key)
+	require.NotNil(t, form)
+
+	assert.Equal(t, key, form.Key)
+	assert.Empty(t, form.Groups)
+	assert.Equal(t, 0, form.ErrorCount())
+	assert.Equal(t, key, form.FormKey())
+	assert.Equal(t, http.StatusUnprocessableEntity, form.HttpStatus())
+	msg := ""
+	assert.Equal(t, msg, form.Error())
+}
+
+func Test_Form_SetStatus_Success_WithStatus(t *testing.T) {
+	key := "form-a"
+	status := http.StatusForbidden
+	form := failure.NewForm(key, status)
+	require.NotNil(t, form)
+
+	assert.Equal(t, status, form.HttpStatus())
+
+	form.SetStatus(http.StatusAccepted)
+	assert.Equal(t, http.StatusAccepted, form.HttpStatus())
+}
 
 func TestRest_Error(t *testing.T) {
 	r := &failure.RestAPI{

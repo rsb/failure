@@ -63,6 +63,20 @@ func (e err) Error() string {
 	return string(e)
 }
 
+// UserError is used to signify that the error was maded by the user
+func UserError(format string, a ...any) error {
+	return Wrap(BadRequestErr, format, a...)
+}
+
+func IsUserError(e error) bool {
+	return errors.Is(e, BadRequestErr)
+}
+
+func ToUserError(e error, format string, a ...any) error {
+	cause := BadRequest(e.Error())
+	return Wrap(cause, format, a...)
+}
+
 // InvalidState is used to signal that the resource is not in a valid state
 func InvalidState(format string, a ...any) error {
 	return Wrap(InvalidStateErr, format, a...)
