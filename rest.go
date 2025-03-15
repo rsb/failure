@@ -30,6 +30,10 @@ func (f FormField) Error() string {
 	return fmt.Sprintf("%s: %s", f.Key, f.Msg)
 }
 
+func (f FormField) Empty() bool {
+	return f.Key == "" && f.Msg == ""
+}
+
 // FieldErrorGroup is used to represent a group of FieldErrors like
 // a form or a struct
 type FormFieldGroup struct {
@@ -96,13 +100,14 @@ func (f *FormFieldGroup) Message(key string) string {
 	return ""
 }
 
-func (f *FormFieldGroup) Field(key string) *FormField {
+func (f *FormFieldGroup) Field(key string) (FormField, bool) {
+	var field FormField
 	for _, field := range f.Fields {
 		if field.Key == key {
-			return &field
+			return field, true
 		}
 	}
-	return nil
+	return field, false
 }
 
 func (f *FormFieldGroup) HasErrors() bool {
@@ -174,6 +179,16 @@ func (fc *Form) AddNewGroup(name string) *FormFieldGroup {
 	return group
 }
 
+func (fc *Form) Field(group, key string) (FormField, bool) {
+	var field FormField
+	g, ok := fc.Groups[group]
+	if !ok {
+		return field, false
+	}
+
+	return g.Field(key)
+}
+
 func (fc *Form) AddField(grp, name, msg string) {
 	group, ok := fc.Groups[grp]
 	if !ok {
@@ -209,11 +224,16 @@ func (fc Form) AllFailures() map[string]map[string]string {
 
 func (fc Form) Error() string {
 	errors := []string{}
-	for _, g := range fc.Groups {
-		err := fmt.Sprintf("%s: %s", g.Name, g.Error())
-		errors = append(errors, err)
+	if fc.ErrorCount() == 0 {
+		return ""
 	}
-	return strings.Join(errors, ", ")
+
+	for _, g := range fc.Groups {
+		errors = append(errors, g.Error())
+	}
+
+	line := fmt.Sprintf("%s: %s", fc.Key, strings.Join(errors, ", "))
+	return line
 }
 
 type RestAPI struct {

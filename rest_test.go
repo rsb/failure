@@ -57,8 +57,15 @@ func Test_FieldErrorGroup_Success_AddField(t *testing.T) {
 	assert.Empty(t, group.Message("foo"))
 	assert.Equal(t, msg, group.Message(key))
 
-	assert.Nil(t, group.Field("foo"))
-	assert.Equal(t, group.Fields[0], *group.Field(key))
+	field, ok := group.Field("foo")
+	assert.False(t, ok)
+	assert.True(t, field.Empty())
+
+	field, ok = group.Field(key)
+	require.True(t, ok)
+	assert.Equal(t, key, field.Key)
+	assert.Equal(t, msg, field.Msg)
+	assert.False(t, field.Empty())
 }
 
 func Test_FieldErrorGroup_Success_AddField_WhenNil(t *testing.T) {
@@ -100,6 +107,8 @@ func Test_NewForm_Success(t *testing.T) {
 	form := failure.NewForm(key)
 	require.NotNil(t, form)
 
+	assert.False(t, form.HasErrors())
+
 	assert.Equal(t, key, form.Key)
 	assert.Empty(t, form.Groups)
 	assert.Equal(t, 0, form.ErrorCount())
@@ -119,6 +128,136 @@ func Test_Form_SetStatus_Success_WithStatus(t *testing.T) {
 
 	form.SetStatus(http.StatusAccepted)
 	assert.Equal(t, http.StatusAccepted, form.HttpStatus())
+}
+
+func Test_Form_MarkAsBadRequest_Success(t *testing.T) {
+	key := "form-a"
+	form := failure.NewForm(key)
+	require.NotNil(t, form)
+
+	assert.Equal(t, http.StatusUnprocessableEntity, form.HttpStatus())
+
+	form.MarkAsBadRequest()
+	assert.Equal(t, http.StatusBadRequest, form.HttpStatus())
+}
+
+func Test_Form_MarkAsUnprocessableEntity_Success(t *testing.T) {
+	key := "form-a"
+	form := failure.NewForm(key, http.StatusForbidden)
+	require.NotNil(t, form)
+
+	assert.Equal(t, http.StatusForbidden, form.HttpStatus())
+
+	form.MarkAsUnprocessableEntity()
+	assert.Equal(t, http.StatusUnprocessableEntity, form.HttpStatus())
+}
+
+func Test_Form_Add_Success(t *testing.T) {
+	key := "form-a"
+	form := failure.NewForm(key)
+	require.NotNil(t, form)
+
+	name := "group-a"
+	group := failure.NewFormFieldGroup(name)
+	require.NotNil(t, group)
+
+	key1 := "field-a"
+	msg1 := "error a"
+	field1 := failure.NewFormField(key1, msg1)
+
+	key2 := "field-b"
+	msg2 := "error b"
+	field2 := failure.NewFormField(key2, msg2)
+
+	group.Add(field1, field2)
+	form.Add(group)
+
+	assert.Equal(t, 2, form.ErrorCount())
+	assert.True(t, form.HasErrors())
+}
+
+func Test_Form_AddNewGroup_Success(t *testing.T) {
+	key := "form-a"
+	form := failure.NewForm(key)
+	require.NotNil(t, form)
+
+	name := "group-a"
+	group := form.AddNewGroup(name)
+	require.NotNil(t, group)
+
+	key1 := "field-a"
+	msg1 := "error a"
+	field1 := failure.NewFormField(key1, msg1)
+
+	key2 := "field-b"
+	msg2 := "error b"
+	field2 := failure.NewFormField(key2, msg2)
+
+	group.Add(field1, field2)
+
+	assert.Equal(t, 2, form.ErrorCount())
+	assert.True(t, form.HasErrors())
+}
+
+func Test_Form_AddField_Success_NoGroupExists(t *testing.T) {
+	key := "form-a"
+	form := failure.NewForm(key)
+	require.NotNil(t, form)
+
+	groupName := "group-a"
+	form.AddField(groupName, "field-a", "error_a")
+
+	assert.Equal(t, 1, form.ErrorCount())
+	assert.True(t, form.HasErrors())
+
+	field, ok := form.Field(groupName, "field-a")
+	require.True(t, ok)
+	assert.Equal(t, "field-a", field.Key)
+	assert.Equal(t, "error_a", field.Msg)
+
+	field, ok = form.Field("group-b", "field-xxxx")
+	assert.False(t, ok)
+	assert.True(t, field.Empty())
+}
+
+func Test_Form_Error_Success(t *testing.T) {
+	key := "form-a"
+	form := failure.NewForm(key)
+	require.NotNil(t, form)
+
+	form.AddField("group-a", "field-a", "error_a")
+	form.AddField("group-a", "field-b", "error_b")
+	form.AddField("group-b", "field-c", "error_c")
+	form.AddField("group-b", "field-d", "error_d")
+
+	assert.True(t, form.HasErrors())
+	assert.Equal(t, 4, form.ErrorCount())
+
+	expected := "form-a: group-a(field-a: error_a, field-b: error_b), group-b(field-c: error_c, field-d: error_d)"
+	assert.Equal(t, expected, form.Error())
+}
+
+func Test_Form_AllFailures_Success(t *testing.T) {
+	key := "form-a"
+	form := failure.NewForm(key)
+	require.NotNil(t, form)
+
+	form.AddField("group-a", "field-a", "error_a")
+	form.AddField("group-a", "field-b", "error_b")
+	form.AddField("group-b", "field-c", "error_c")
+	form.AddField("group-b", "field-d", "error_d")
+
+	expected := map[string]map[string]string{
+		"group-a": {
+			"field-a": "error_a",
+			"field-b": "error_b",
+		},
+		"group-b": {
+			"field-c": "error_c",
+			"field-d": "error_d",
+		},
+	}
+	assert.Equal(t, expected, form.AllFailures())
 }
 
 func TestRest_Error(t *testing.T) {
