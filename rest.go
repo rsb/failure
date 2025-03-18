@@ -7,52 +7,49 @@ import (
 	"strings"
 )
 
-// FieldError is used to represent a form field, sturct field or any
+// Field is used to represent a form field, sturct field or any
 // key whose value is invalid
-type FormField struct {
+type Field struct {
 	Key string
 	Msg string
 }
 
-// NewFormField creates a new FieldError with a key and msessage
-// the logError is optional and cdefaults to BadRequest. This is
-// wahat would be used in logs
-func NewFormField(key, msg string) FormField {
-	return FormField{Key: key, Msg: msg}
+func NewField(key, msg string) Field {
+	return Field{Key: key, Msg: msg}
 }
 
 func IsFieldError(e error) bool {
-	var f FormField
+	var f Field
 	return errors.As(e, &f)
 }
 
-func (f FormField) Error() string {
+func (f Field) Error() string {
 	return fmt.Sprintf("%s: %s", f.Key, f.Msg)
 }
 
-func (f FormField) Empty() bool {
+func (f Field) Empty() bool {
 	return f.Key == "" && f.Msg == ""
 }
 
-// FieldErrorGroup is used to represent a group of FieldErrors like
+// FieldGroup is used to represent a group of Fields like
 // a form or a struct
-type FormFieldGroup struct {
+type FieldGroup struct {
 	Name   string
-	Fields []FormField
+	Fields []Field
 }
 
-func NewFormFieldGroup(name string) *FormFieldGroup {
-	return &FormFieldGroup{
+func NewFieldGroup(name string) *FieldGroup {
+	return &FieldGroup{
 		Name:   name,
-		Fields: make([]FormField, 0),
+		Fields: make([]Field, 0),
 	}
 }
 
-func (f *FormFieldGroup) ErrorCount() int {
+func (f *FieldGroup) ErrorCount() int {
 	return len(f.Fields)
 }
 
-func (f *FormFieldGroup) Error() string {
+func (f *FieldGroup) Error() string {
 	if f.ErrorCount() == 0 {
 		return ""
 	}
@@ -64,23 +61,23 @@ func (f *FormFieldGroup) Error() string {
 	return fmt.Sprintf("%s(%s)", f.Name, strings.Join(errors, ", "))
 }
 
-func (f *FormFieldGroup) Add(items ...FormField) {
+func (f *FieldGroup) Add(items ...Field) {
 	if f.Fields == nil {
-		f.Fields = make([]FormField, 0)
+		f.Fields = make([]Field, 0)
 	}
 
 	f.Fields = append(f.Fields, items...)
 }
 
-func (f *FormFieldGroup) AddField(name, msg string) {
+func (f *FieldGroup) AddField(name, msg string) {
 	if f.Fields == nil {
-		f.Fields = make([]FormField, 0)
+		f.Fields = make([]Field, 0)
 	}
 
-	f.Fields = append(f.Fields, NewFormField(name, msg))
+	f.Fields = append(f.Fields, NewField(name, msg))
 }
 
-func (f *FormFieldGroup) HasError(key string) bool {
+func (f *FieldGroup) HasError(key string) bool {
 	for _, field := range f.Fields {
 		if field.Key == key {
 			return true
@@ -90,7 +87,7 @@ func (f *FormFieldGroup) HasError(key string) bool {
 	return false
 }
 
-func (f *FormFieldGroup) Message(key string) string {
+func (f *FieldGroup) Message(key string) string {
 	for _, field := range f.Fields {
 		if field.Key == key {
 			return field.Msg
@@ -100,8 +97,8 @@ func (f *FormFieldGroup) Message(key string) string {
 	return ""
 }
 
-func (f *FormFieldGroup) Field(key string) (FormField, bool) {
-	var field FormField
+func (f *FieldGroup) Field(key string) (Field, bool) {
+	var field Field
 	for _, field := range f.Fields {
 		if field.Key == key {
 			return field, true
@@ -110,17 +107,17 @@ func (f *FormFieldGroup) Field(key string) (FormField, bool) {
 	return field, false
 }
 
-func (f *FormFieldGroup) HasErrors() bool {
+func (f *FieldGroup) HasErrors() bool {
 	return f.ErrorCount() > 0
 }
 
-type Form struct {
+type Catalog struct {
 	Status int
 	Key    string
-	Groups map[string]*FormFieldGroup
+	Groups map[string]*FieldGroup
 }
 
-func NewForm(key string, opts ...int) *Form {
+func NewCatalog(key string, opts ...int) *Catalog {
 	var status int
 
 	if len(opts) > 0 && opts[0] != 0 {
@@ -129,18 +126,18 @@ func NewForm(key string, opts ...int) *Form {
 		status = http.StatusUnprocessableEntity
 	}
 
-	return &Form{
+	return &Catalog{
 		Status: status,
 		Key:    key,
-		Groups: make(map[string]*FormFieldGroup),
+		Groups: make(map[string]*FieldGroup),
 	}
 }
 
-func (fc *Form) FormKey() string {
+func (fc *Catalog) FormKey() string {
 	return fc.Key
 }
 
-func (fc *Form) ErrorCount() int {
+func (fc *Catalog) ErrorCount() int {
 	count := 0
 	for _, g := range fc.Groups {
 		count += g.ErrorCount()
@@ -148,23 +145,23 @@ func (fc *Form) ErrorCount() int {
 	return count
 }
 
-func (fc *Form) HttpStatus() int {
+func (fc *Catalog) HttpStatus() int {
 	return fc.Status
 }
 
-func (fc *Form) MarkAsBadRequest() {
+func (fc *Catalog) MarkAsBadRequest() {
 	fc.Status = http.StatusBadRequest
 }
 
-func (fc *Form) MarkAsUnprocessableEntity() {
+func (fc *Catalog) MarkAsUnprocessableEntity() {
 	fc.Status = http.StatusUnprocessableEntity
 }
 
-func (fc *Form) SetStatus(status int) {
+func (fc *Catalog) SetStatus(status int) {
 	fc.Status = status
 }
 
-func (fc *Form) Add(items ...*FormFieldGroup) {
+func (fc *Catalog) Add(items ...*FieldGroup) {
 	for _, group := range items {
 		if group == nil {
 			continue
@@ -173,14 +170,14 @@ func (fc *Form) Add(items ...*FormFieldGroup) {
 	}
 }
 
-func (fc *Form) AddNewGroup(name string) *FormFieldGroup {
-	group := NewFormFieldGroup(name)
+func (fc *Catalog) AddNewGroup(name string) *FieldGroup {
+	group := NewFieldGroup(name)
 	fc.Groups[name] = group
 	return group
 }
 
-func (fc *Form) Field(group, key string) (FormField, bool) {
-	var field FormField
+func (fc *Catalog) Field(group, key string) (Field, bool) {
+	var field Field
 	g, ok := fc.Groups[group]
 	if !ok {
 		return field, false
@@ -189,16 +186,16 @@ func (fc *Form) Field(group, key string) (FormField, bool) {
 	return g.Field(key)
 }
 
-func (fc *Form) AddField(grp, name, msg string) {
+func (fc *Catalog) AddField(grp, name, msg string) {
 	group, ok := fc.Groups[grp]
 	if !ok {
-		group = NewFormFieldGroup(grp)
+		group = NewFieldGroup(grp)
 		fc.Groups[grp] = group
 	}
 	group.AddField(name, msg)
 }
 
-func (fc Form) HasErrors() bool {
+func (fc Catalog) HasErrors() bool {
 	for _, g := range fc.Groups {
 		if g.HasErrors() {
 			return true
@@ -207,7 +204,7 @@ func (fc Form) HasErrors() bool {
 	return false
 }
 
-func (fc Form) AllFailures() map[string]map[string]string {
+func (fc Catalog) AllFailures() map[string]map[string]string {
 	fails := make(map[string]map[string]string)
 	for k, g := range fc.Groups {
 		if !g.HasErrors() {
@@ -222,7 +219,7 @@ func (fc Form) AllFailures() map[string]map[string]string {
 	return fails
 }
 
-func (fc Form) Error() string {
+func (fc Catalog) Error() string {
 	errors := []string{}
 	if fc.ErrorCount() == 0 {
 		return ""

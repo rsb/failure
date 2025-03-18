@@ -14,7 +14,7 @@ import (
 func Test_FieldError_Success(t *testing.T) {
 	key := "field-a"
 	msg := "error a"
-	err := failure.NewFormField(key, msg)
+	err := failure.NewField(key, msg)
 	require.Error(t, err)
 
 	expected := fmt.Sprintf("%s: %s", key, msg)
@@ -26,7 +26,7 @@ func Test_FieldError_Success(t *testing.T) {
 
 func Test_FieldErrorGroup_Success_Empty(t *testing.T) {
 	name := "group-a"
-	group := failure.NewFormFieldGroup(name)
+	group := failure.NewFieldGroup(name)
 	require.NotNil(t, group)
 
 	assert.Equal(t, name, group.Name)
@@ -39,7 +39,7 @@ func Test_FieldErrorGroup_Success_Empty(t *testing.T) {
 
 func Test_FieldErrorGroup_Success_AddField(t *testing.T) {
 	name := "group-a"
-	group := failure.NewFormFieldGroup(name)
+	group := failure.NewFieldGroup(name)
 	require.NotNil(t, group)
 
 	key := "field-a"
@@ -70,7 +70,7 @@ func Test_FieldErrorGroup_Success_AddField(t *testing.T) {
 
 func Test_FieldErrorGroup_Success_AddField_WhenNil(t *testing.T) {
 
-	group := failure.FormFieldGroup{
+	group := failure.FieldGroup{
 		Name: "group-a",
 	}
 
@@ -83,16 +83,16 @@ func Test_FieldErrorGroup_Success_AddField_WhenNil(t *testing.T) {
 
 func Test_FormFieldGroup_Add_Success(t *testing.T) {
 	name := "group-a"
-	group := failure.NewFormFieldGroup(name)
+	group := failure.NewFieldGroup(name)
 	require.NotNil(t, group)
 
 	key1 := "field-a"
 	msg1 := "error a"
-	field1 := failure.NewFormField(key1, msg1)
+	field1 := failure.NewField(key1, msg1)
 
 	key2 := "field-b"
 	msg2 := "error b"
-	field2 := failure.NewFormField(key2, msg2)
+	field2 := failure.NewField(key2, msg2)
 
 	group.Add(field1, field2)
 	assert.Equal(t, 2, group.ErrorCount())
@@ -102,9 +102,9 @@ func Test_FormFieldGroup_Add_Success(t *testing.T) {
 	assert.True(t, group.HasErrors())
 }
 
-func Test_NewForm_Success(t *testing.T) {
+func Test_NewCatalog_Success(t *testing.T) {
 	key := "form-a"
-	form := failure.NewForm(key)
+	form := failure.NewCatalog(key)
 	require.NotNil(t, form)
 
 	assert.False(t, form.HasErrors())
@@ -118,134 +118,134 @@ func Test_NewForm_Success(t *testing.T) {
 	assert.Equal(t, msg, form.Error())
 }
 
-func Test_Form_SetStatus_Success_WithStatus(t *testing.T) {
+func Test_Catalog_SetStatus_Success_WithStatus(t *testing.T) {
 	key := "form-a"
 	status := http.StatusForbidden
-	form := failure.NewForm(key, status)
-	require.NotNil(t, form)
+	catalog := failure.NewCatalog(key, status)
+	require.NotNil(t, catalog)
 
-	assert.Equal(t, status, form.HttpStatus())
+	assert.Equal(t, status, catalog.HttpStatus())
 
-	form.SetStatus(http.StatusAccepted)
-	assert.Equal(t, http.StatusAccepted, form.HttpStatus())
+	catalog.SetStatus(http.StatusAccepted)
+	assert.Equal(t, http.StatusAccepted, catalog.HttpStatus())
 }
 
-func Test_Form_MarkAsBadRequest_Success(t *testing.T) {
+func Test_Catalog_MarkAsBadRequest_Success(t *testing.T) {
 	key := "form-a"
-	form := failure.NewForm(key)
-	require.NotNil(t, form)
+	catalog := failure.NewCatalog(key)
+	require.NotNil(t, catalog)
 
-	assert.Equal(t, http.StatusUnprocessableEntity, form.HttpStatus())
+	assert.Equal(t, http.StatusUnprocessableEntity, catalog.HttpStatus())
 
-	form.MarkAsBadRequest()
-	assert.Equal(t, http.StatusBadRequest, form.HttpStatus())
+	catalog.MarkAsBadRequest()
+	assert.Equal(t, http.StatusBadRequest, catalog.HttpStatus())
 }
 
-func Test_Form_MarkAsUnprocessableEntity_Success(t *testing.T) {
+func Test_Catalog_MarkAsUnprocessableEntity_Success(t *testing.T) {
 	key := "form-a"
-	form := failure.NewForm(key, http.StatusForbidden)
-	require.NotNil(t, form)
+	catalog := failure.NewCatalog(key, http.StatusForbidden)
+	require.NotNil(t, catalog)
 
-	assert.Equal(t, http.StatusForbidden, form.HttpStatus())
+	assert.Equal(t, http.StatusForbidden, catalog.HttpStatus())
 
-	form.MarkAsUnprocessableEntity()
-	assert.Equal(t, http.StatusUnprocessableEntity, form.HttpStatus())
+	catalog.MarkAsUnprocessableEntity()
+	assert.Equal(t, http.StatusUnprocessableEntity, catalog.HttpStatus())
 }
 
-func Test_Form_Add_Success(t *testing.T) {
+func Test_Catalog_Add_Success(t *testing.T) {
 	key := "form-a"
-	form := failure.NewForm(key)
-	require.NotNil(t, form)
+	catalog := failure.NewCatalog(key)
+	require.NotNil(t, catalog)
 
 	name := "group-a"
-	group := failure.NewFormFieldGroup(name)
+	group := failure.NewFieldGroup(name)
 	require.NotNil(t, group)
 
 	key1 := "field-a"
 	msg1 := "error a"
-	field1 := failure.NewFormField(key1, msg1)
+	field1 := failure.NewField(key1, msg1)
 
 	key2 := "field-b"
 	msg2 := "error b"
-	field2 := failure.NewFormField(key2, msg2)
+	field2 := failure.NewField(key2, msg2)
 
 	group.Add(field1, field2)
-	form.Add(group)
+	catalog.Add(group)
 
-	assert.Equal(t, 2, form.ErrorCount())
-	assert.True(t, form.HasErrors())
+	assert.Equal(t, 2, catalog.ErrorCount())
+	assert.True(t, catalog.HasErrors())
 }
 
-func Test_Form_AddNewGroup_Success(t *testing.T) {
+func Test_Catalog_AddNewGroup_Success(t *testing.T) {
 	key := "form-a"
-	form := failure.NewForm(key)
-	require.NotNil(t, form)
+	catalog := failure.NewCatalog(key)
+	require.NotNil(t, catalog)
 
 	name := "group-a"
-	group := form.AddNewGroup(name)
+	group := catalog.AddNewGroup(name)
 	require.NotNil(t, group)
 
 	key1 := "field-a"
 	msg1 := "error a"
-	field1 := failure.NewFormField(key1, msg1)
+	field1 := failure.NewField(key1, msg1)
 
 	key2 := "field-b"
 	msg2 := "error b"
-	field2 := failure.NewFormField(key2, msg2)
+	field2 := failure.NewField(key2, msg2)
 
 	group.Add(field1, field2)
 
-	assert.Equal(t, 2, form.ErrorCount())
-	assert.True(t, form.HasErrors())
+	assert.Equal(t, 2, catalog.ErrorCount())
+	assert.True(t, catalog.HasErrors())
 }
 
-func Test_Form_AddField_Success_NoGroupExists(t *testing.T) {
+func Test_Catalog_AddField_Success_NoGroupExists(t *testing.T) {
 	key := "form-a"
-	form := failure.NewForm(key)
-	require.NotNil(t, form)
+	catalog := failure.NewCatalog(key)
+	require.NotNil(t, catalog)
 
 	groupName := "group-a"
-	form.AddField(groupName, "field-a", "error_a")
+	catalog.AddField(groupName, "field-a", "error_a")
 
-	assert.Equal(t, 1, form.ErrorCount())
-	assert.True(t, form.HasErrors())
+	assert.Equal(t, 1, catalog.ErrorCount())
+	assert.True(t, catalog.HasErrors())
 
-	field, ok := form.Field(groupName, "field-a")
+	field, ok := catalog.Field(groupName, "field-a")
 	require.True(t, ok)
 	assert.Equal(t, "field-a", field.Key)
 	assert.Equal(t, "error_a", field.Msg)
 
-	field, ok = form.Field("group-b", "field-xxxx")
+	field, ok = catalog.Field("group-b", "field-xxxx")
 	assert.False(t, ok)
 	assert.True(t, field.Empty())
 }
 
-func Test_Form_Error_Success(t *testing.T) {
+func Test_Catalog_Error_Success(t *testing.T) {
 	key := "form-a"
-	form := failure.NewForm(key)
-	require.NotNil(t, form)
+	catalog := failure.NewCatalog(key)
+	require.NotNil(t, catalog)
 
-	form.AddField("group-a", "field-a", "error_a")
-	form.AddField("group-a", "field-b", "error_b")
-	form.AddField("group-b", "field-c", "error_c")
-	form.AddField("group-b", "field-d", "error_d")
+	catalog.AddField("group-a", "field-a", "error_a")
+	catalog.AddField("group-a", "field-b", "error_b")
+	catalog.AddField("group-b", "field-c", "error_c")
+	catalog.AddField("group-b", "field-d", "error_d")
 
-	assert.True(t, form.HasErrors())
-	assert.Equal(t, 4, form.ErrorCount())
+	assert.True(t, catalog.HasErrors())
+	assert.Equal(t, 4, catalog.ErrorCount())
 
 	expected := "form-a: group-a(field-a: error_a, field-b: error_b), group-b(field-c: error_c, field-d: error_d)"
-	assert.Equal(t, expected, form.Error())
+	assert.Equal(t, expected, catalog.Error())
 }
 
-func Test_Form_AllFailures_Success(t *testing.T) {
+func Test_Catalog_AllFailures_Success(t *testing.T) {
 	key := "form-a"
-	form := failure.NewForm(key)
-	require.NotNil(t, form)
+	catalog := failure.NewCatalog(key)
+	require.NotNil(t, catalog)
 
-	form.AddField("group-a", "field-a", "error_a")
-	form.AddField("group-a", "field-b", "error_b")
-	form.AddField("group-b", "field-c", "error_c")
-	form.AddField("group-b", "field-d", "error_d")
+	catalog.AddField("group-a", "field-a", "error_a")
+	catalog.AddField("group-a", "field-b", "error_b")
+	catalog.AddField("group-b", "field-c", "error_c")
+	catalog.AddField("group-b", "field-d", "error_d")
 
 	expected := map[string]map[string]string{
 		"group-a": {
@@ -257,7 +257,7 @@ func Test_Form_AllFailures_Success(t *testing.T) {
 			"field-d": "error_d",
 		},
 	}
-	assert.Equal(t, expected, form.AllFailures())
+	assert.Equal(t, expected, catalog.AllFailures())
 }
 
 func TestRest_Error(t *testing.T) {
